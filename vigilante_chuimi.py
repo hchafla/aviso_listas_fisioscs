@@ -1,4 +1,5 @@
 import os
+import re
 import requests
 import pdfplumber
 
@@ -28,7 +29,7 @@ def extraer_datos_chuimi():
         f.write(response.content)
 
     encontrado_fisioterapeuta = False
-    fila_general_limpia = None
+    texto_fila_general = ""
 
     with pdfplumber.open("chuimi.pdf") as pdf:
         for pagina in pdf.pages:
@@ -38,37 +39,42 @@ def extraer_datos_chuimi():
                     if not fila:
                         continue
                     
-                    # Convertimos la fila a una lista de textos limpios (quitando "None" y saltos de línea)
                     celdas_limpias = [str(c).replace('\n', ' ').strip() for c in fila if c]
                     texto_completo = " ".join(celdas_limpias).upper()
                     
                     if "FISIOTERAPEUTA" in texto_completo:
                         encontrado_fisioterapeuta = True
                     
-                    # Si ya pasamos por Fisioterapeuta y esta fila contiene los datos de 'GENERAL'
                     if encontrado_fisioterapeuta and "GENERAL" in texto_completo:
-                        # Al estar descuadrada por la celda combinada de Fisioterapeuta, 
-                        # eliminamos la palabra 'GENERAL' si aparece para normalizar los datos numéricos.
-                        fila_general_limpia = [c for c in celdas_limpias if c.upper() != "GENERAL"]
+                        texto_fila_general = texto_completo
                         break
-                if fila_general_limpia: break
-            if fila_general_limpia: break
+                if texto_fila_general: break
+            if texto_fila_general: break
 
-    if not fila_general_limpia or len(fila_general_limpia) < 6:
-        print("No se pudo estructurar correctamente la fila de Fisioterapeuta General.")
+    if not texto_fila_general:
+        print("No se localizó la fila de Fisioterapeuta General.")
         return None
 
-    # Tras limpiar la celda combinada, el orden estricto de los datos en el PDF del CHUIMI es:
-    # [0] Nº Orden Corta, [1] Fecha Corta, [2] Nº Orden Larga, [3] Fecha Larga, [4] Nº Orden Interinidad, [5] Fecha Interinidad
-    corta_no = fila_general_limpia[0]
-    corta_fec = fila_general_limpia[1]
-    larga_no = fila_general_limpia[2]
-    larga_fec = fila_general_limpia[3]
-    interinidad_no = fila_general_limpia[4]
-    interinidad_fec = fila_general_limpia[5]
+    # Extraemos todos los números aislados (ej: 389, 445) y todas las fechas (ej: 25/05/2026)
+    # Eliminamos la palabra GENERAL para que no interfiera si contiene números raros.
+    texto_procesar = texto_fila_general.replace("GENERAL", "")
+    
+    fechas = re.findall(r"\d{2}/\d{2}/\d{4}", texto_procesar)
+    # Para los números de orden, buscamos dígitos sueltos que no formen parte de una fecha
+    numeros = re.findall(r"\b\d+\b", re.sub(r"\d{2}/\d{2}/\d{4}", "", texto_procesar))
+    # Eliminamos el número '2007' si se colara de la cabecera de la OPE
+    numeros = [n for n in numeros if n != "2007"]
 
-    # Guardamos el bloque estructurado completo para detectar cualquier cambio en números o fechas
-    return f"{corta_no} ({corta_fec})|{larga_no} ({larga_fec})|{interinidad_no} ({interinidad_fec})"
+    if len(numeros) < 3 or len(fechas) < 3:
+        print(f"Estructura de datos incompleta. Números: {numeros}, Fechas: {fechas}")
+        return None
+
+    # Asignamos los valores siguiendo el orden secuencial de aparición en el texto
+    corta = f"{numeros[0]} ({fechas[0]})"
+    larga = f"{numeros[1]} ({fechas[1]})"
+    interinidad = f"{numeros[2]} ({fechas[2]})"
+
+    return f"{corta}|{larga}|{interinidad}"
 
 def controlar_cambios():
     datos_actuales = extraer_datos_chuimi()
@@ -81,10 +87,8 @@ def controlar_cambios():
             datos_anteriores = f.read().strip()
 
     if datos_actuales != datos_anteriores:
-        # Desempaquetamos los datos actuales
         c_act, l_act, i_act = datos_actuales.split("|")
         
-        # Desempaquetamos los datos anteriores si existen para la comparativa
         try:
             c_ant, l_ant, i_ant = datos_anteriores.split("|")
         except:
