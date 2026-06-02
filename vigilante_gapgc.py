@@ -39,11 +39,9 @@ def extraer_datos_gapgc():
                     if not fila:
                         continue
                     
-                    # Limpiamos celdas convirtiendo saltos de línea en espacios
                     celdas_limpias = [str(c).replace('\n', ' ').strip() for c in fila if c]
                     texto_completo = " ".join(celdas_limpias).upper()
                     
-                    # En este PDF la fila empieza directamente por la categoría
                     if "FISIOTERAPEUTA" in texto_completo:
                         texto_fila_fisioterapeuta = texto_completo
                         break
@@ -54,21 +52,15 @@ def extraer_datos_gapgc():
         print("No se localizó la fila de FISIOTERAPEUTA en el PDF de GAPGC.")
         return None
 
-    # Extraemos fechas (formatos habituales: DD/MM/AAAA o DD/MM/AA)
     fechas = re.findall(r"\d{2}/\d{2}/\d{2,4}", texto_fila_fisioterapeuta)
-    
-    # Extraemos números sueltos eliminando las fechas previamente para que no se dupliquen dígitos
     texto_sin_fechas = re.sub(r"\d{2}/\d{2}/\d{2,4}", "", texto_fila_fisioterapeuta)
     numeros = re.findall(r"\b\d+\b", texto_sin_fechas)
-    
-    # Quitamos el año 2007 si aparece debido al título de la cabecera (OPE 2007)
     numeros = [n for n in numeros if n != "2007"]
 
     if len(numeros) < 5 or len(fechas) < 5:
         print(f"Estructura GAPGC inesperada. Números: {numeros}, Fechas: {fechas}")
         return None
 
-    # Mapeo secuencial según el orden de las columnas de la Imagen 1
     ev_corta = f"{numeros[0]} ({fechas[0]})"
     ev_larga = f"{numeros[1]} ({fechas[1]})"
     sust_corta = f"{numeros[2]} ({fechas[2]})"
@@ -110,7 +102,7 @@ def controlar_cambios():
 
         with open(DB_FILE, "w") as f:
             f.write(datos_actuales)
-else:
+    else:
         print("Sin cambios en la GAPGC.")
 
 if __name__ == "__main__":
