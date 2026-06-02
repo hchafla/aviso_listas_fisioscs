@@ -2,8 +2,6 @@ name: Vigilante GAPGC
 
 on:
   schedule:
-    # Se ejecuta de lunes a viernes a las 09:15, 12:15 y 15:15 en Canarias (WET)
-    # Lo desfasamos 15 minutos respecto al CHUIMI para que no pisen ejecuciones
     - cron: '15 9,12,15 * * 1-5'
   workflow_dispatch:
 
@@ -12,10 +10,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Clonar Repositorio
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Inicializar Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.10'
 
