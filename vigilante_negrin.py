@@ -29,7 +29,7 @@ def extraer_datos_negrin():
     with open("negrin.pdf", "wb") as f:
         f.write(response.content)
 
-    texto_linea_fisioterapeuta = ""
+    texto_fila_fisioterapeuta = ""
 
     with pdfplumber.open("negrin.pdf") as pdf:
         for pagina in pdf.pages:
@@ -39,36 +39,41 @@ def extraer_datos_negrin():
                     if not fila:
                         continue
                     
-                    # Unificamos el texto de las celdas de la fila
                     celdas_limpias = [str(c).replace('\n', ' ').strip() for c in fila if c]
                     texto_completo = " ".join(celdas_limpias).upper()
                     
-                    # Buscamos la fila específica de Fisioterapeuta
-                    # Validamos que contenga "FISIOTERAPEUTA" pero evitamos que se confunda si existieran perfiles especiales de otra cosa
+                    # Buscamos la coincidencia exacta de la fila
                     if "FISIOTERAPEUTA" in texto_completo:
-                        texto_linea_fisioterapeuta = texto_completo
+                        texto_fila_fisioterapeuta = texto_completo
                         break
-                if texto_linea_fisioterapeuta: break
-            if texto_linea_fisioterapeuta: break
+                if texto_fila_fisioterapeuta: break
+            if texto_fila_fisioterapeuta: break
 
-    if not texto_linea_fisioterapeuta:
+    if not texto_fila_fisioterapeuta:
         print("No se localizó la fila de FISIOTERAPEUTA en el PDF de NEGRIN.")
         return None
 
-    # Extraemos la fecha (DD/MM/AAAA)
-    fechas = re.findall(r"\d{2}/\d{2}/\d{4}", texto_linea_fisioterapeuta)
+    # Extraemos fechas con formato DD/MM/AA o DD/MM/AAAA
+    fechas = re.findall(r"\d{2}/\d{2}/\d{2,4}", texto_fila_fisioterapeuta)
     
-    # Extraemos el número de orden limpiando la fecha para que sus dígitos no interfieran
-    texto_sin_fechas = re.sub(r"\d{2}/\d{2}/\d{4}", "", texto_linea_fisioterapeuta)
+    # Limpiamos las fechas del texto para aislar los números de orden
+    texto_sin_fechas = re.sub(r"\d{2}/\d{2}/\d{2,4}", "", texto_fila_fisioterapeuta)
+    
+    # Extraemos los números sueltos (los números de orden pueden incluir guiones o letras como 441-S, 
+    # pero en Fisioterapeuta vemos números puros limpios: 708, 691, 550)
     numeros = re.findall(r"\b\d+\b", texto_sin_fechas)
-    numeros = [n for n in numeros if n != "2007"] # Filtro de seguridad por la OPE
+    numeros = [n for n in numeros if n != "2007"] # Filtro OPE
 
-    if not numeros or not fechas:
-        print(f"Estructura NEGRIN inesperada. Texto obtenido: {texto_linea_fisioterapeuta}")
+    if len(numeros) < 3 or len(fechas) < 3:
+        print(f"Estructura NEGRIN inesperada. Números: {numeros}, Fechas: {fechas}")
         return None
 
-    # En este formato, el primer número es el orden de corte y la primera fecha es su actualización
-    return f"{numeros[0]} ({fechas[0]})"
+    # Mapeo de datos según las columnas de la imagen
+    corta = f"{numeros[0]} ({fechas[0]})"
+    larga = f"{numeros[1]} ({fechas[1]})"
+    interinidad = f"{numeros[2]} ({fechas[2]})"
+
+    return f"{corta}|{larga}|{interinidad}"
 
 def controlar_cambios():
     datos_actuales = extraer_datos_negrin()
@@ -81,12 +86,19 @@ def controlar_cambios():
             datos_anteriores = f.read().strip()
 
     if datos_actuales != datos_anteriores:
+        c_act, l_act, i_act = datos_actuales.split("|")
+        
+        try:
+            c_ant, l_ant, i_ant = datos_anteriores.split("|")
+        except:
+            c_ant, l_ant, i_ant = "Ninguno", "Ninguno", "Ninguno"
+
         mensaje = (
             "⚠️ **[ALERTA] Actualización Hospital NEGRÍN**\n"
-            "Se han detectado cambios en el último llamamiento de *Fisioterapeuta*:\n\n"
-            f"• **Último Llamamiento:**\n"
-            f"  Antes: {datos_anteriores or 'Ninguno'}\n"
-            f"  Ahora: **{datos_actuales}**\n\n"
+            "Se han detectado cambios en los llamamientos de *Fisioterapeuta*:\n\n"
+            f"• **Corta Duración:**\n  Antes: {c_ant}\n  Ahora: **{c_act}**\n\n"
+            f"• **Larga Duración:**\n  Antes: {l_ant}\n  Ahora: **{l_act}**\n\n"
+            f"• **Interinidad:**\n  Antes: {i_ant}\n  Ahora: **{i_act}**\n\n"
             f"🔗 [Abrir PDF Oficial]({PDF_URL})"
         )
         
