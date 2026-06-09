@@ -6,7 +6,6 @@ import pdfplumber
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 
-# URL oficial del PDF del Hospital Doctor Negrín
 PDF_URL = "https://www3.gobiernodecanarias.org/sanidad/scs/content/cb750224-e0b8-11ec-9633-a3e478fed70d/Ultimos-llamamientos-LC-DrNegrin.pdf"
 DB_FILE = "ultimo_negrin.txt"
 
@@ -42,7 +41,6 @@ def extraer_datos_negrin():
                     celdas_limpias = [str(c).replace('\n', ' ').strip() for c in fila if c]
                     texto_completo = " ".join(celdas_limpias).upper()
                     
-                    # Buscamos la coincidencia exacta de la fila
                     if "FISIOTERAPEUTA" in texto_completo:
                         texto_fila_fisioterapeuta = texto_completo
                         break
@@ -53,22 +51,16 @@ def extraer_datos_negrin():
         print("No se localizó la fila de FISIOTERAPEUTA en el PDF de NEGRIN.")
         return None
 
-    # Extraemos fechas con formato DD/MM/AA o DD/MM/AAAA
     fechas = re.findall(r"\d{2}/\d{2}/\d{2,4}", texto_fila_fisioterapeuta)
-    
-    # Limpiamos las fechas del texto para aislar los números de orden
     texto_sin_fechas = re.sub(r"\d{2}/\d{2}/\d{2,4}", "", texto_fila_fisioterapeuta)
     
-    # Extraemos los números sueltos (los números de orden pueden incluir guiones o letras como 441-S, 
-    # pero en Fisioterapeuta vemos números puros limpios: 708, 691, 550)
     numeros = re.findall(r"\b\d+\b", texto_sin_fechas)
-    numeros = [n for n in numeros if n != "2007"] # Filtro OPE
+    numeros = [n for n in numeros if n != "2007"]
 
     if len(numeros) < 3 or len(fechas) < 3:
         print(f"Estructura NEGRIN inesperada. Números: {numeros}, Fechas: {fechas}")
         return None
 
-    # Mapeo de datos según las columnas de la imagen
     corta = f"{numeros[0]} ({fechas[0]})"
     larga = f"{numeros[1]} ({fechas[1]})"
     interinidad = f"{numeros[2]} ({fechas[2]})"
@@ -93,12 +85,22 @@ def controlar_cambios():
         except:
             c_ant, l_ant, i_ant = "Ninguno", "Ninguno", "Ninguno"
 
+        # Formateo con negrita condicional para las 3 categorías del Negrín
+        l_c = f"• Corta Duración: {c_ant} ➔ {c_act}"
+        if c_act != c_ant: l_c = f"• **Corta Duración: {c_ant} ➔ {c_act}**"
+
+        l_l = f"• Larga Duración: {l_ant} ➔ {l_act}"
+        if l_act != l_ant: l_l = f"• **Larga Duración: {l_ant} ➔ {l_act}**"
+
+        l_i = f"• Interinidad: {i_ant} ➔ {i_act}"
+        if i_act != i_ant: l_i = f"• **Interinidad: {i_ant} ➔ {i_act}**"
+
         mensaje = (
             "⚠️ **[ALERTA] Actualización Hospital NEGRÍN**\n"
             "Se han detectado cambios en los llamamientos de *Fisioterapeuta*:\n\n"
-            f"• **Corta Duración:**\n  Antes: {c_ant}\n  Ahora: **{c_act}**\n\n"
-            f"• **Larga Duración:**\n  Antes: {l_ant}\n  Ahora: **{l_act}**\n\n"
-            f"• **Interinidad:**\n  Antes: {i_ant}\n  Ahora: **{i_act}**\n\n"
+            f"{l_c}\n"
+            f"{l_l}\n"
+            f"{l_i}\n\n"
             f"🔗 [Abrir PDF Oficial]({PDF_URL})"
         )
         
