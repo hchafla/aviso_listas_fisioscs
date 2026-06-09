@@ -72,50 +72,62 @@ def consultar_llamamientos_directo():
         
         r_final = session.post(url_cat, data=payload_categoria, timeout=15)
         
-        # Paso 4: Procesar la tabla de resultados finales (CON FILTRO CORRECTO)
-        print("Paso 4: Analizando tabla final de resultados...")
+        # Paso 4: Procesar resultados mediante búsqueda semántica elemental
+        print("Paso 4: Analizando datos mediante árbol de elementos...")
         soup_final = BeautifulSoup(r_final.text, "html.parser")
+        
+        lineas_ordinario = []
+        lineas_discapacidad = []
+        datos_control = ""
+
+        # Buscamos todas las tablas del documento
         tablas = soup_final.find_all("table")
         
-        if not tablas:
-            print("Error: No se encontraron tablas en la respuesta final.")
+        for tabla in tablas:
+            # Identificamos el contexto de la tabla buscando texto en sus sub-cabeceras o elementos previos
+            texto_tabla = tabla.get_text()
+            
+            es_discapacidad = "discapacidad" in texto_tabla.lower() or "cupo" in texto_tabla.lower()
+            
+            filas = tabla.find_all("tr")
+            for fila in filas:
+                celdas = [c.get_text(strip=True) for c in fila.find_all("td")]
+                if len(celdas) >= 3:
+                    tipo = celdas[0]
+                    if any(kw in tipo for kw in ["Corta duración", "Larga duración", "Interinidad"]):
+                        pos_gerencia = celdas[1] if celdas[1] else "-"
+                        pos_global = celdas[2] if celdas[2] else "-"
+                        
+                        linea = f"  • {tipo} ➔ Gerencia: `{pos_gerencia}` | Global: `{pos_global}`"
+                        token_control = f"{tipo}:{pos_gerencia}-{pos_global}"
+                        
+                        # Clasificación unívoca basada en la presencia de metadatos de discapacidad
+                        if es_discapacidad:
+                            if linea not in lineas_discapacidad:
+                                lineas_discapacidad.append(linea)
+                                datos_control += f"DISC_{token_control}|"
+                        else:
+                            if linea not in lineas_ordinario:
+                                lineas_ordinario.append(linea)
+                                datos_control += f"ORD_{token_control}|"
+
+        # Construcción del cuerpo del mensaje si existen datos reales
+        if not datos_control:
+            print("Error: No se ha podido extraer ningún dato numérico válido.")
             return
 
         lineas_mensaje = []
-        datos_control = ""
-        titulos_tablas = ["📋 *Nombramientos Ordinarios:*", "♿ *Cupo Personas con Discapacidad:*"]
-
-        for i, tabla in enumerate(tablas):
-            if i >= len(titulos_tablas):
-                break
+        if lineas_ordinario:
+            lineas_mensaje.append("📋 *Nombramientos Ordinarios:*")
+            lineas_mensaje.extend(lineas_ordinario)
+            lineas_mensaje.append("")
             
-            filas_datos = [fila for fila in tabla.find_all("tr") if fila.find("td")]
-            contenido_tabla_añadido = False
+        if lineas_discapacidad:
+            lineas_mensaje.append("♿ *Cupo Personas con Discapacidad:*")
+            lineas_mensaje.extend(lineas_discapacidad)
+            lineas_mensaje.append("")
 
-            if filas_datos:
-                bloque_actual = []
-                for fila in filas_datos:
-                    celdas = [c.get_text(strip=True) for c in fila.find_all("td")]
-                    if len(celdas) >= 3:
-                        tipo = celdas[0]
-                        # FILTRO FACTUAL: Ignoramos textos informativos, solo procesamos datos reales de listas
-                        if any(keyword in tipo for keyword in ["Corta duración", "Larga duración", "Interinidad"]):
-                            pos_gerencia = celdas[1] if celdas[1] else "-"
-                            pos_global = celdas[2] if celdas[2] else "-"
-                            bloque_actual.append(f"  • {tipo} ➔ Gerencia: `{pos_gerencia}` | Global: `{pos_global}`")
-                            datos_control += f"{tipo}:{pos_gerencia}-{pos_global}|"
-                            contenido_tabla_añadido = True
-                
-                if contenido_tabla_añadido:
-                    lineas_mensaje.append(titulos_tablas[i])
-                    lineas_mensaje.extend(bloque_actual)
-                    lineas_mensaje.append("")
-
-        if not datos_control:
-            print("Estructura analizada pero vacía de números legítimos.")
-            return
-
-        # Control de Persistencia y Alerta en Telegram
+        # Control de persistencia
         estado_anterior = ""
         if os.path.exists(FICHERO_ESTADO):
             with open(FICHERO_ESTADO, "r", encoding="utf-8") as f:
@@ -131,12 +143,12 @@ def consultar_llamamientos_directo():
             mensaje_final += f"\n🔗 [Verificar Web]({url_base})"
             
             enviar_telegram(mensaje_final)
-            print("¡Éxito! Datos limpios extraídos y notificación enviada.")
+            print("¡Éxito! Estructura corregida y enviada a Telegram.")
         else:
-            print("Sin novedades. Los datos numéricos coinciden exactamente.")
+            print("Sin novedades. Los datos coinciden con el registro de control.")
 
     except Exception as e:
-        print(f"Fallo en la conexión directa: {e}")
+        print(f"Fallo en la extracción por conexiones directas: {e}")
 
 if __name__ == "__main__":
     consultar_llamamientos_directo()
