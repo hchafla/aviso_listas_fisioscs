@@ -72,22 +72,21 @@ def consultar_llamamientos_directo():
         
         r_final = session.post(url_cat, data=payload_categoria, timeout=15)
         
-        # Paso 4: Procesar resultados mediante búsqueda semántica elemental
-        print("Paso 4: Analizando datos mediante árbol de elementos...")
+        # Paso 4: Procesar resultados separando estrictamente por bloques de tablas ordinarias y discapacidad
+        print("Paso 4: Analizando tablas con segmentación estricta...")
         soup_final = BeautifulSoup(r_final.text, "html.parser")
         
         lineas_ordinario = []
         lineas_discapacidad = []
         datos_control = ""
 
-        # Buscamos todas las tablas del documento
         tablas = soup_final.find_all("table")
         
         for tabla in tablas:
-            # Identificamos el contexto de la tabla buscando texto en sus sub-cabeceras o elementos previos
-            texto_tabla = tabla.get_text()
+            texto_completo_tabla = tabla.get_text().lower()
             
-            es_discapacidad = "discapacidad" in texto_tabla.lower() or "cupo" in texto_tabla.lower()
+            # Clasificación explícita según el texto interno de la tabla contenedora
+            es_discapacidad = "discapacidad" in texto_completo_tabla or "cupo" in texto_completo_tabla
             
             filas = tabla.find_all("tr")
             for fila in filas:
@@ -98,10 +97,10 @@ def consultar_llamamientos_directo():
                         pos_gerencia = celdas[1] if celdas[1] else "-"
                         pos_global = celdas[2] if celdas[2] else "-"
                         
-                        linea = f"  • {tipo} ➔ Gerencia: `{pos_gerencia}` | Global: `{pos_global}`"
+                        # Formateo con las nuevas etiquetas solicitadas
+                        linea = f"  • {tipo} ➔ Posición en la Gerencia: `{pos_gerencia}` | Posición Global: `{pos_global}`"
                         token_control = f"{tipo}:{pos_gerencia}-{pos_global}"
                         
-                        # Clasificación unívoca basada en la presencia de metadatos de discapacidad
                         if es_discapacidad:
                             if linea not in lineas_discapacidad:
                                 lineas_discapacidad.append(linea)
@@ -111,11 +110,11 @@ def consultar_llamamientos_directo():
                                 lineas_ordinario.append(linea)
                                 datos_control += f"ORD_{token_control}|"
 
-        # Construcción del cuerpo del mensaje si existen datos reales
         if not datos_control:
-            print("Error: No se ha podido extraer ningún dato numérico válido.")
+            print("Error: No se pudieron extraer datos numéricos.")
             return
 
+        # Construcción limpia del mensaje
         lineas_mensaje = []
         if lineas_ordinario:
             lineas_mensaje.append("📋 *Nombramientos Ordinarios:*")
@@ -127,7 +126,7 @@ def consultar_llamamientos_directo():
             lineas_mensaje.extend(lineas_discapacidad)
             lineas_mensaje.append("")
 
-        # Control de persistencia
+        # Control de persistencia y envío
         estado_anterior = ""
         if os.path.exists(FICHERO_ESTADO):
             with open(FICHERO_ESTADO, "r", encoding="utf-8") as f:
@@ -140,15 +139,15 @@ def consultar_llamamientos_directo():
             mensaje_final = "🔄 *SCS TIEMPO REAL: LLAMAMIENTOS*\n"
             mensaje_final += "🏥 _Hospital Dr. Negrín — FISIOTERAPEUTA_\n\n"
             mensaje_final += "\n".join(lineas_mensaje)
-            mensaje_final += f"\n🔗 [Verificar Web]({url_base})"
+            mensaje_final += f"🔗 [Verificar Web]({url_base})"
             
             enviar_telegram(mensaje_final)
-            print("¡Éxito! Estructura corregida y enviada a Telegram.")
+            print("Datos actualizados y mensaje enviado correctamente.")
         else:
-            print("Sin novedades. Los datos coinciden con el registro de control.")
+            print("Sin novedades en los datos numéricos de las listas.")
 
     except Exception as e:
-        print(f"Fallo en la extracción por conexiones directas: {e}")
+        print(f"Error en la ejecución del script directo: {e}")
 
 if __name__ == "__main__":
     consultar_llamamientos_directo()
