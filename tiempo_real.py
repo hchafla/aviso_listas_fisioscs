@@ -51,32 +51,41 @@ def procesar_gerencia(session, nombre, valor_gerencia):
         
         datos_actuales = ""
         lineas_ord, lineas_disc = [], []
-        estado_ant_map = {}
         
+        estado_ant = ""
         if os.path.exists(fichero_estado):
-            with open(fichero_estado, "r") as f:
-                contenido = f.read().strip()
-                if contenido:
-                    for item in contenido.split("|"):
-                        if ":" in item:
-                            k, v = item.split(":", 1)
-                            estado_ant_map[k] = v
+            with open(fichero_estado, "r") as f: estado_ant = f.read().strip()
 
         for idx, fila in enumerate(filas):
             celdas = [c.get_text(strip=True) for c in fila.find_all("td")]
-            key, val = celdas[0], f"{celdas[1]}-{celdas[2]}"
-            datos_actuales += f"{key}:{val}|"
+            info_linea = f"{celdas[0]}:{celdas[1]}-{celdas[2]}"
+            datos_actuales += info_linea + "|"
             
-            texto_linea = f"  • {key} ➔ Gerencia: `{celdas[1]}` | Global: `{celdas[2]}`"
-            if estado_ant_map.get(key) != val:
+            # Aplicar negrita si hubo cambio
+            texto_linea = f"  • {celdas[0]} ➔ Gerencia: `{celdas[1]}` | Global: `{celdas[2]}`"
+            if estado_ant and info_linea not in estado_ant:
                 texto_linea = f"**{texto_linea}**"
             
             if idx < 3: lineas_ord.append(texto_linea)
             else: lineas_disc.append(texto_linea)
 
-        if datos_actuales != "|".join([f"{k}:{v}" for k,v in estado_ant_map.items()]) + "|":
+        if datos_actuales != estado_ant:
             with open(fichero_estado, "w") as f: f.write(datos_actuales)
             msg = (f"🔄 *SCS: {nombre}*\n"
                    f"🏥 _Fisioterapeuta_\n\n"
                    f"📋 *Ordinarios:*\n" + "\n".join(lineas_ord) + "\n\n"
-                   f"♿ *Discapacidad:*\n" + "\n".join(lineas_disc) +
+                   f"♿ *Discapacidad:*\n" + "\n".join(lineas_disc) + "\n\n"
+                   f"🔗 [Ver en la web]({URL_WEB})")
+            enviar_telegram(msg)
+            
+    except Exception as e:
+        print(f"Error en {nombre}: {e}")
+
+def main():
+    session = requests.Session()
+    session.headers.update({"User-Agent": "Mozilla/5.0"})
+    for g in GERENCIAS_TOTALES:
+        procesar_gerencia(session, g['nombre'], g['valor'])
+
+if __name__ == "__main__":
+    main()
