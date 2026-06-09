@@ -1,8 +1,6 @@
 import os
-import asyncio
-from playwright.async_api import async_playwright
-from bs4 import BeautifulSoup
 import requests
+from bs4 import BeautifulSoup
 
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
@@ -16,86 +14,74 @@ def enviar_telegram(mensaje):
     except Exception as e:
         print(f"Error enviando a Telegram: {e}")
 
-async def consultar_llamamientos():
-    url_base = "https://www3.gobiernodecanarias.org/sanidad/scs/ConsultaSIGLE/index.xhtml"
+def extraer_view_state(html):
+    soup = BeautifulSoup(html, "html.parser")
+    input_vs = soup.find("input", {"name": "javax.faces.ViewState"})
+    if input_vs:
+        return input_vs.get("value")
+    return None
+
+def consultar_llamamientos_directo():
+    url = "https://www3.gobiernodecanarias.org/sanidad/scs/ConsultaSIGLE/index.xhtml"
     
-    async with async_playwright() as p:
-        print("Iniciando navegador...")
-        browser = await p.chromium.launch(headless=True)
-        context = await browser.new_context(
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            locale="es-ES"
-        )
-        page = await context.new_page()
-        
-        # PASO 1: Entrar a la página inicial
-        print(f"Abriendo Home: {url_base}")
-        await page.goto(url_base, wait_until="networkidle")
-        
-        # PASO 2: Interactuar con el Bloque 3 (Llamamientos) usando identificadores del DOM
-        print("Localizando el bloque 3 de Últimos Llamamientos...")
-        
-        # Localizamos el contenedor del combo del bloque 3. 
-        # En PrimeFaces suele ser el elemento previo al panel flotante o comparte estructura.
-        # Buscamos el div del selector de gerencia dentro de la sección de llamamientos.
-        selector_gerencia = page.locator("div[id*='gerenciaUNSOM']").first
-        if await selector_gerencia.count() == 0:
-            selector_gerencia = page.locator("div[id*='j_idt43']").first
+    session = requests.Session()
+    session.headers.update({
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "es-ES,es;q=0.9",
+        "Connection": "keep-alive"
+    })
 
-        print("Abriendo el menú de Gerencia del Bloque 3...")
-        await selector_gerencia.click()
-        await page.wait_for_timeout(1000)
+    try:
+        # Petición 1: Obtener la Home y el ViewState inicial
+        print("Paso 1: Conectando a la Home...")
+        r_home = session.get(url, timeout=15)
+        vs_1 = extraer_view_state(r_home.text)
         
-        print("Seleccionando Hospital Dr. Negrín...")
-        # Hacemos clic en la opción del Negrín dentro del panel explícito que vimos en tus capturas
-        await page.click("div[id*='gerenciaUNSOM_panel'] li[data-label='Hospital Universitario de Gran Canaria Doctor Negrín']")
-        await page.wait_for_timeout(1000)
-        
-        print("Pulsando el botón 'Seleccionar' del bloque 3...")
-        # Buscamos el botón 'Seleccionar' que ejecute la acción del formulario de llamamientos
-        boton_seleccionar_1 = page.locator("button[id*='btnSeleccionarGerenciaUNSOM']").first
-        if await boton_seleccionar_1.count() == 0:
-            # Si el ID cambia, usamos el botón 'Seleccionar' que esté más cerca del texto del bloque 3
-            boton_seleccionar_1 = page.locator("text=Seleccionar").nth(2)
-        
-        async with page.expect_navigation(wait_until="networkidle", timeout=20000):
-            await boton_seleccionar_1.click()
-            
-        print("¡Redirección exitosa! Procesando página de Categorías...")
-        await page.wait_for_timeout(2000)
+        if not vs_1:
+            print("Error: No se pudo obtener el ViewState inicial.")
+            return
 
-        # PASO 3: Seleccionar la categoría FISIOTERAPEUTA
-        print("Abriendo desplegable de Categorías...")
-        # En la nueva página (categorias.xhtml), el selector de categoría usará la marca UNSOM
-        selector_categoria = page.locator("div[id*='categoriaUNSOM']").first
-        await selector_categoria.click()
-        await page.wait_for_timeout(1000)
+        # Petición 2: Simular el envío de la Gerencia (Bloque 3)
+        # Usamos los IDs exactos de PrimeFaces que aparecían en tus capturas de pantalla (j_idt43)
+        print("Paso 2: Enviando selección de Gerencia (Hospital Negrín)...")
+        payload_gerencia = {
+            "j_idt43": "j_idt43",
+            "j_idt43:gerenciaUNSOM_input": "Hospital Universitario de Gran Canaria Doctor Negrín",
+            "j_idt43:gerenciaUNSOM_focus": "",
+            "j_idt43:btnSeleccionarGerenciaUNSOM": "Seleccionar",
+            "javax.faces.ViewState": vs_1
+        }
         
-        print("Seleccionando FISIOTERAPEUTA...")
-        await page.click("div[id*='categoriaUNSOM_panel'] li[data-label='FISIOTERAPEUTA']")
-        await page.wait_for_timeout(1000)
+        r_categorias = session.post(url, data=payload_gerencia, timeout=15)
+        vs_2 = extraer_view_state(r_categorias.text)
         
-        print("Pulsando el botón 'Seleccionar' final para ver resultados...")
-        boton_seleccionar_2 = page.locator("button[id*='btnBuscarLlamamientos']").first
-        if await boton_seleccionar_2.count() == 0:
-            boton_seleccionar_2 = page.locator("text=Seleccionar").first
-        
-        async with page.expect_navigation(wait_until="networkidle", timeout=20000):
-            await boton_seleccionar_2.click()
-            
-        print("Esperando tablas de resultados...")
-        await page.wait_for_timeout(3000)
+        if not vs_2:
+            print("Error: El servidor rechazó la selección de Gerencia (ViewState 2 no recibido).")
+            return
 
-        # PASO 4: Analizar las tablas de resultados finales
-        print("Extrayendo información de las tablas...")
-        html = await page.content()
-        await browser.close()
+        # Petición 3: Simular el envío de la Categoría (FISIOTERAPEUTA) en la página mutada
+        print("Paso 3: Enviando selección de Categoría (FISIOTERAPEUTA)...")
+        payload_categoria = {
+            "formulario": "formulario",
+            "formulario:categoriaUNSOM_input": "FISIOTERAPEUTA",
+            "formulario:categoriaUNSOM_focus": "",
+            "formulario:btnBuscarLlamamientos": "Seleccionar",
+            "javax.faces.ViewState": vs_2
+        }
         
-        soup = BeautifulSoup(html, "html.parser")
-        tablas = soup.find_all("table")
+        # Al procesar el segundo formulario, el backend redirige internamente usando los mismos datos de sesión
+        r_final = session.post(url, data=payload_categoria, timeout=15)
+        
+        # Procesamiento final del HTML
+        print("Paso 4: Procesando tablas de resultados...")
+        soup_final = BeautifulSoup(r_final.text, "html.parser")
+        tablas = soup_final.find_all("table")
         
         if not tablas:
-            print("Error: No se localizaron las tablas de resultados.")
+            print("Error: No se encontraron tablas. Es probable que los nombres de los inputs hayan cambiado.")
+            # Si falla, imprimimos una muestra para ver qué IDs nuevos ha generado el servidor
+            print(f"Muestra del HTML final recibido (primeros 600 bytes): {r_final.text[:600]}")
             return
 
         lineas_mensaje = []
@@ -119,10 +105,10 @@ async def consultar_llamamientos():
             lineas_mensaje.append("")
 
         if not datos_control:
-            print("Tablas sin datos legibles.")
+            print("Tablas localizadas pero vacías.")
             return
 
-        # PASO 5: Control de cambios
+        # Control de Persistencia y Alertas
         estado_anterior = ""
         if os.path.exists(FICHERO_ESTADO):
             with open(FICHERO_ESTADO, "r", encoding="utf-8") as f:
@@ -132,15 +118,18 @@ async def consultar_llamamientos():
             with open(FICHERO_ESTADO, "w", encoding="utf-8") as f:
                 f.write(datos_control)
                 
-            mensaje_final = "🔄 *SCS: ACTUALIZACIÓN DE LLAMAMIENTOS*\n"
+            mensaje_final = "🔄 *SCS TIEMPO REAL: LLAMAMIENTOS*\n"
             mensaje_final += "🏥 _Hospital Dr. Negrín — FISIOTERAPEUTA_\n\n"
             mensaje_final += "\n".join(lineas_mensaje)
-            mensaje_final += f"\n🔗 [Verificar en la Web]({url_base})"
+            mensaje_final += f"\n🔗 [Verificar Web]({url})"
             
             enviar_telegram(mensaje_final)
-            print("Notificación enviada a Telegram.")
+            print("¡Éxito! Mensaje enviado a Telegram.")
         else:
-            print("Sin cambios detectados.")
+            print("Sin novedades. Los datos coinciden.")
+
+    except Exception as e:
+        print(f"Fallo en la conexión directa: {e}")
 
 if __name__ == "__main__":
-    asyncio.run(consultar_llamamientos())
+    consultar_llamamientos_directo()
