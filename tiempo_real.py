@@ -1,6 +1,8 @@
 import os
-import requests
+import asyncio
+from playwright.async_api import async_playwright
 from bs4 import BeautifulSoup
+import requests
 
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
@@ -14,74 +16,66 @@ def enviar_telegram(mensaje):
     except Exception as e:
         print(f"Error enviando a Telegram: {e}")
 
-def extraer_view_state(html):
-    soup = BeautifulSoup(html, "html.parser")
-    input_vs = soup.find("input", {"name": "javax.faces.ViewState"})
-    if input_vs:
-        return input_vs.get("value")
-    return None
-
-def consultar_llamamientos_directo():
-    url = "https://www3.gobiernodecanarias.org/sanidad/scs/ConsultaSIGLE/index.xhtml"
+async def consultar_llamamientos():
+    url_base = "https://www3.gobiernodecanarias.org/sanidad/scs/ConsultaSIGLE/index.xhtml"
     
-    session = requests.Session()
-    session.headers.update({
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "es-ES,es;q=0.9",
-        "Connection": "keep-alive"
-    })
+    async with async_playwright() as p:
+        print("Iniciando navegador virtual...")
+        browser = await p.chromium.launch(headless=True)
+        context = await browser.new_context(
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            locale="es-ES"
+        )
+        page = await context.new_page()
+        
+        print(f"Conectando a la Home: {url_base}")
+        await page.goto(url_base, wait_until="networkidle")
+        
+        # 1. PASO: SELECCIÓN DE GERENCIA (BLOQUE 3)
+        print("Abriendo el menú de Gerencia (Bloque 3)...")
+        # Apuntamos al elemento que contiene el identificador único visible en el inspector
+        await page.click("div[id*='gerenciaUNSOM']")
+        await page.wait_for_timeout(1000)
+        
+        print("Seleccionando 'Hospital Universitario de Gran Canaria Doctor Negrín'...")
+        # Forzamos el click en la opción de la lista correspondiente a su ID de panel
+        await page.click("div[id*='gerenciaUNSOM_panel'] li[data-label='Hospital Universitario de Gran Canaria Doctor Negrín']")
+        await page.wait_for_timeout(1000)
+        
+        print("Pulsando el botón 'Seleccionar' de Gerencia...")
+        async with page.expect_navigation(wait_until="networkidle", timeout=20000):
+            # Hacemos click en el botón específico de este bloque
+            await page.click("button[id*='btnSeleccionarGerenciaUNSOM']")
+        
+        print("Página de categorías cargada con éxito.")
+        await page.wait_for_timeout(1500)
 
-    try:
-        # Petición 1: Obtener la Home y el ViewState inicial
-        print("Paso 1: Conectando a la Home...")
-        r_home = session.get(url, timeout=15)
-        vs_1 = extraer_view_state(r_home.text)
+        # 2. PASO: SELECCIÓN DE CATEGORÍA
+        print("Abriendo el menú de Categorías...")
+        await page.click("div[id*='categoriaUNSOM']")
+        await page.wait_for_timeout(1000)
         
-        if not vs_1:
-            print("Error: No se pudo obtener el ViewState inicial.")
-            return
+        print("Seleccionando 'FISIOTERAPEUTA'...")
+        await page.click("div[id*='categoriaUNSOM_panel'] li[data-label='FISIOTERAPEUTA']")
+        await page.wait_for_timeout(1000)
+        
+        print("Pulsando el botón 'Seleccionar' final para procesar resultados...")
+        async with page.expect_navigation(wait_until="networkidle", timeout=20000):
+            await page.click("button[id*='btnBuscarLlamamientos']")
+        
+        print("Esperando la carga de datos en pantalla...")
+        await page.wait_for_timeout(3000)
 
-        # Petición 2: Simular el envío de la Gerencia (Bloque 3)
-        # Usamos los IDs exactos de PrimeFaces que aparecían en tus capturas de pantalla (j_idt43)
-        print("Paso 2: Enviando selección de Gerencia (Hospital Negrín)...")
-        payload_gerencia = {
-            "j_idt43": "j_idt43",
-            "j_idt43:gerenciaUNSOM_input": "Hospital Universitario de Gran Canaria Doctor Negrín",
-            "j_idt43:gerenciaUNSOM_focus": "",
-            "j_idt43:btnSeleccionarGerenciaUNSOM": "Seleccionar",
-            "javax.faces.ViewState": vs_1
-        }
+        # 3. PASO: EXTRACCIÓN DE FILAS
+        print("Analizando HTML final...")
+        html = await page.content()
+        await browser.close()
         
-        r_categorias = session.post(url, data=payload_gerencia, timeout=15)
-        vs_2 = extraer_view_state(r_categorias.text)
-        
-        if not vs_2:
-            print("Error: El servidor rechazó la selección de Gerencia (ViewState 2 no recibido).")
-            return
-
-        # Petición 3: Simular el envío de la Categoría (FISIOTERAPEUTA) en la página mutada
-        print("Paso 3: Enviando selección de Categoría (FISIOTERAPEUTA)...")
-        payload_categoria = {
-            "formulario": "formulario",
-            "formulario:categoriaUNSOM_input": "FISIOTERAPEUTA",
-            "formulario:categoriaUNSOM_focus": "",
-            "formulario:btnBuscarLlamamientos": "Seleccionar",
-            "javax.faces.ViewState": vs_2
-        }
-        
-        # Al procesar el segundo formulario, el backend redirige internamente usando los mismos datos de sesión
-        r_final = session.post(url, data=payload_categoria, timeout=15)
-        
-        # Procesamiento final del HTML
-        print("Paso 4: Procesando tablas de resultados...")
-        soup_final = BeautifulSoup(r_final.text, "html.parser")
-        tablas = soup_final.find_all("table")
+        soup = BeautifulSoup(html, "html.parser")
+        tablas = soup.find_all("table")
         
         if not tablas:
-            print("Error: No se encontraron tablas. Es probable que los nombres de los inputs hayan cambiado.")
-            # Si falla, imprimimos una muestra para ver qué IDs nuevos ha generado el servidor
-            print(f"Muestra del HTML final recibido (primeros 600 bytes): {r_final.text[:600]}")
+            print("Error: No se localizaron las tablas de resultados en el HTML final.")
             return
 
         lineas_mensaje = []
@@ -91,24 +85,27 @@ def consultar_llamamientos_directo():
         for i, tabla in enumerate(tablas):
             if i >= len(titulos_tablas):
                 break
-            filas = tabla.find_all("tr")[1:]
-            if filas:
+            
+            # Filtramos las filas que realmente contienen celdas de datos (td), omitiendo las cabeceras
+            filas_datos = [fila for fila in tabla.find_all("tr") if fila.find("td")]
+
+            if filas_datos:
                 lineas_mensaje.append(titulos_tablas[i])
-            for fila in filas:
-                celdas = [c.get_text(strip=True) for c in fila.find_all("td")]
-                if len(celdas) >= 3:
-                    tipo, pos_gerencia, pos_global = celdas[0], celdas[1], celdas[2]
-                    pos_gerencia = pos_gerencia if pos_gerencia else "-"
-                    pos_global = pos_global if pos_global else "-"
-                    lineas_mensaje.append(f"  • {tipo} ➔ Gerencia: `{pos_gerencia}` | Global: `{pos_global}`")
-                    datos_control += f"{tipo}:{pos_gerencia}-{pos_global}|"
-            lineas_mensaje.append("")
+                for fila in filas_datos:
+                    celdas = [c.get_text(strip=True) for c in fila.find_all("td")]
+                    if len(celdas) >= 3:
+                        tipo, pos_gerencia, pos_global = celdas[0], celdas[1], celdas[2]
+                        pos_gerencia = pos_gerencia if pos_gerencia else "-"
+                        pos_global = pos_global if pos_global else "-"
+                        lineas_mensaje.append(f"  • {tipo} ➔ Gerencia: `{pos_gerencia}` | Global: `{pos_global}`")
+                        datos_control += f"{tipo}:{pos_gerencia}-{pos_global}|"
+                lineas_mensaje.append("")
 
         if not datos_control:
-            print("Tablas localizadas pero vacías.")
+            print("Error: Tablas procesadas pero no se encontraron filas de datos numéricos.")
             return
 
-        # Control de Persistencia y Alertas
+        # 4. PASO: PERSISTENCIA Y ALERTA
         estado_anterior = ""
         if os.path.exists(FICHERO_ESTADO):
             with open(FICHERO_ESTADO, "r", encoding="utf-8") as f:
@@ -121,15 +118,12 @@ def consultar_llamamientos_directo():
             mensaje_final = "🔄 *SCS TIEMPO REAL: LLAMAMIENTOS*\n"
             mensaje_final += "🏥 _Hospital Dr. Negrín — FISIOTERAPEUTA_\n\n"
             mensaje_final += "\n".join(lineas_mensaje)
-            mensaje_final += f"\n🔗 [Verificar Web]({url})"
+            mensaje_final += f"\n🔗 [Verificar Web]({url_base})"
             
             enviar_telegram(mensaje_final)
-            print("¡Éxito! Mensaje enviado a Telegram.")
+            print("Notificación enviada con éxito a Telegram.")
         else:
-            print("Sin novedades. Los datos coinciden.")
-
-    except Exception as e:
-        print(f"Fallo en la conexión directa: {e}")
+            print("Sin novedades. Los datos coinciden con el registro guardado.")
 
 if __name__ == "__main__":
-    consultar_llamamientos_directo()
+    asyncio.run(consultar_llamamientos())
