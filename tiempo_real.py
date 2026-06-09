@@ -28,48 +28,53 @@ async def consultar_llamamientos():
         )
         page = await context.new_page()
         
+        # PASO 1: Entrar a la página inicial
         print(f"Abriendo Home: {url_base}")
         await page.goto(url_base, wait_until="networkidle")
         
-        print("Pulsando en 'Últimos llamamientos'...")
-        await page.click("text=Últimos llamamientos")
-        await page.wait_for_load_state("networkidle")
-        await page.wait_for_timeout(1500)
-
-        # PASO 1: SELECCIÓN DE GERENCIA (Pantalla Inicial)
-        print("Abriendo el menú de Gerencia...")
-        # Hacemos clic en el primer (y único) desplegable disponible en esta pantalla
-        await page.locator(".ui-selectonemenu").first.click()
+        # PASO 2: Interactuar con el Bloque 3 (Llamamientos)
+        print("Buscando el desplegable en el Bloque 3 (Llamamientos)...")
+        # El tercer desplegable de la página corresponde al bloque 3 del vídeo
+        desplegable_gerencia = page.locator(".ui-selectonemenu").nth(2)
+        await desplegable_gerencia.click()
         await page.wait_for_timeout(800)
         
-        print("Seleccionando Hospital Dr. Negrín y esperando recarga de página...")
-        # Al hacer clic en la opción, el navegador DEBE esperar una recarga/navegación automática
-        async with page.expect_navigation(wait_until="networkidle", timeout=20000):
-            await page.click("li:has-text('Hospital Universitario de Gran Canaria Doctor Negrín')")
+        print("Seleccionando Hospital Dr. Negrín...")
+        await page.click("li:has-text('Hospital Universitario de Gran Canaria Doctor Negrín')")
+        await page.wait_for_timeout(1000)
         
-        print("¡Primera recarga completada con éxito!")
-        await page.wait_for_timeout(2000)
+        print("Pulsando el primer botón 'Seleccionar' para ir a Categorías...")
+        # Pulsamos el botón 'Seleccionar' que está dentro del bloque de llamamientos (el tercero de la página)
+        boton_seleccionar_1 = page.locator("button:has-text('Seleccionar')").nth(2)
+        
+        async with page.expect_navigation(wait_until="networkidle", timeout=20000):
+            await boton_seleccionar_1.click()
+            
+        print("¡Redirección exitosa! Ya estamos en la página de Categorías.")
+        await page.wait_for_timeout(1500)
 
-        # PASO 2: SELECCIÓN DE CATEGORÍA (Nueva Pantalla)
-        print("Buscando el nuevo selector de Categoría en la página cargada...")
-        # En esta nueva pantalla, el desplegable de categorías debería estar listo
+        # PASO 3: Seleccionar la categoría FISIOTERAPEUTA
+        print("Abriendo desplegable de Categorías...")
+        # En esta nueva pantalla, el combo de categorías es el primero disponible
         await page.locator(".ui-selectonemenu").first.click()
         await page.wait_for_timeout(800)
         
         print("Seleccionando FISIOTERAPEUTA...")
         await page.click("li:has-text('FISIOTERAPEUTA')")
-        await page.wait_for_timeout(1500)
-
-        # PASO 3: BOTÓN BUSCAR
-        print("Pulsando el botón Buscar final...")
-        async with page.expect_navigation(wait_until="networkidle", timeout=20000):
-            await page.click("button:has-text('Buscar')")
+        await page.wait_for_timeout(1000)
         
-        print("Esperando la carga de las tablas de resultados...")
-        await page.wait_for_timeout(3000)
+        print("Pulsando el segundo botón 'Seleccionar' para ver los resultados...")
+        # Pulsamos el botón Seleccionar de esta segunda pantalla para cargar los datos finales
+        boton_seleccionar_2 = page.locator("button:has-text('Seleccionar')").first
+        
+        async with page.expect_navigation(wait_until="networkidle", timeout=20000):
+            await boton_seleccionar_2.click()
+            
+        print("Esperando renderizado de las tablas de datos...")
+        await page.wait_for_timeout(2500)
 
-        # PASO 4: EXTRACCIÓN DE DATOS
-        print("Analizando resultados finales...")
+        # PASO 4: Analizar las tablas de resultados finales
+        print("Extrayendo información de las tablas...")
         html = await page.content()
         await browser.close()
         
@@ -77,7 +82,7 @@ async def consultar_llamamientos():
         tablas = soup.find_all("table")
         
         if not tablas:
-            print("Error: No se encontró ninguna tabla de resultados. Comprueba si el botón Buscar falló.")
+            print("Error: No se localizaron las tablas en la pantalla final.")
             return
 
         lineas_mensaje = []
@@ -101,10 +106,10 @@ async def consultar_llamamientos():
             lineas_mensaje.append("")
 
         if not datos_control:
-            print("Tablas detectadas pero vacías por dentro.")
+            print("Las tablas no contenían datos de filas válidos.")
             return
 
-        # Control de persistencia
+        # PASO 5: Comprobación de cambios y envío de alerta
         estado_anterior = ""
         if os.path.exists(FICHERO_ESTADO):
             with open(FICHERO_ESTADO, "r", encoding="utf-8") as f:
@@ -114,15 +119,15 @@ async def consultar_llamamientos():
             with open(FICHERO_ESTADO, "w", encoding="utf-8") as f:
                 f.write(datos_control)
                 
-            mensaje_final = "🔄 *SCS TIEMPO REAL: LLAMAMIENTOS*\n"
+            mensaje_final = "🔄 *SCS: ACTUALIZACIÓN DE LLAMAMIENTOS*\n"
             mensaje_final += "🏥 _Hospital Dr. Negrín — FISIOTERAPEUTA_\n\n"
             mensaje_final += "\n".join(lineas_mensaje)
-            mensaje_final += f"\n🔗 [Verificar Web]({url_base})"
+            mensaje_final += f"\n🔗 [Verificar en la Web]({url_base})"
             
             enviar_telegram(mensaje_final)
-            print("Cambio o inicio detectado. Mensaje enviado a Telegram.")
+            print("¡Éxito! Notificación enviada a Telegram.")
         else:
-            print("Sin novedades en los llamamientos.")
+            print("Sin cambios en los listados de llamamientos.")
 
 if __name__ == "__main__":
     asyncio.run(consultar_llamamientos())
