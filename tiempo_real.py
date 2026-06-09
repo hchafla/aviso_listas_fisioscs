@@ -10,7 +10,7 @@ TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 URL_WEB = "https://www3.gobiernodecanarias.org/sanidad/scs/ConsultaSIGLE/index.xhtml"
 
-# ID de tu hoja de cálculo ya integrado
+# ID de tu hoja de cálculo
 SPREADSHEET_ID = "1nmfP4nXQ4Oydvic_rZ1K19zCQBinAicHG38MeKUO0MU"
 
 GERENCIAS_TOTALES = [
@@ -113,7 +113,7 @@ def procesar_gerencia(session, sheets_service, nombre, valor_gerencia):
             texto_linea = f"  • {celdas[0]} ➔ Gerencia: `{celdas[1]}` | Global: `{celdas[2]}`"
             
             if estado_ant and info_linea not in estado_ant:
-                texto_linea = f"⚠️{texto_linea}"
+                texto_linea = f"⚠️ {texto_linea}"
                 tipo_lista = "Ordinaria" if idx < 3 else "Discapacidad"
                 registrar_en_sheets(sheets_service, nombre, tipo_lista, celdas[0], celdas[1], celdas[2])
             
@@ -122,6 +122,22 @@ def procesar_gerencia(session, sheets_service, nombre, valor_gerencia):
 
         if datos_actuales != estado_ant:
             with open(fichero_estado, "w") as f: f.write(datos_actuales)
-            msg = (f"🔄 *SCS: {nombre}*\n"
-                   f"🏥 _Fisioterapeuta_\n\n"
-                   f"📋 *Ordinarios:*\n
+            
+            txt_ord = "\n".join(lineas_ord)
+            txt_disc = "\n".join(lineas_disc)
+            
+            msg = f"🔄 *SCS: {nombre}*\n🏥 _Fisioterapeuta_\n\n📋 *Ordinarios:*\n{txt_ord}\n\n♿ *Discapacidad:*\n{txt_disc}\n\n🔗 [Ver en la web]({URL_WEB})"
+            enviar_telegram(msg)
+            
+    except Exception as e:
+        print(f"Error en {nombre}: {e}")
+
+def main():
+    session = requests.Session()
+    session.headers.update({"User-Agent": "Mozilla/5.0"})
+    sheets_service = obtener_servicio_sheets()
+    for g in GERENCIAS_TOTALES:
+        procesar_gerencia(session, sheets_service, g['nombre'], g['valor'])
+
+if __name__ == "__main__":
+    main()
