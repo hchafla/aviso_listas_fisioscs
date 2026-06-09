@@ -61,10 +61,12 @@ def procesar_gerencia(session, nombre, valor_gerencia):
             info_linea = f"{celdas[0]}:{celdas[1]}-{celdas[2]}"
             datos_actuales += info_linea + "|"
             
-            # Aplicar negrita si hubo cambio
+            # Formato de línea base
             texto_linea = f"  • {celdas[0]} ➔ Gerencia: `{celdas[1]}` | Global: `{celdas[2]}`"
+            
+            # Si hay cambio detectado respecto a lo anterior, añadimos el emoji
             if estado_ant and info_linea not in estado_ant:
-                texto_linea = f"**{texto_linea}**"
+                texto_linea = f"⚠️{texto_linea}"
             
             if idx < 3: lineas_ord.append(texto_linea)
             else: lineas_disc.append(texto_linea)
