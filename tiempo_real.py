@@ -32,46 +32,59 @@ async def consultar_llamamientos():
         print(f"Abriendo Home: {url_base}")
         await page.goto(url_base, wait_until="networkidle")
         
-        # PASO 2: Interactuar con el Bloque 3 (Llamamientos)
-        print("Buscando el desplegable en el Bloque 3 (Llamamientos)...")
-        # El tercer desplegable de la página corresponde al bloque 3 del vídeo
-        desplegable_gerencia = page.locator(".ui-selectonemenu").nth(2)
-        await desplegable_gerencia.click()
-        await page.wait_for_timeout(800)
+        # PASO 2: Interactuar con el Bloque 3 (Llamamientos) usando identificadores del DOM
+        print("Localizando el bloque 3 de Últimos Llamamientos...")
         
-        print("Seleccionando Hospital Dr. Negrín...")
-        await page.click("li:has-text('Hospital Universitario de Gran Canaria Doctor Negrín')")
+        # Localizamos el contenedor del combo del bloque 3. 
+        # En PrimeFaces suele ser el elemento previo al panel flotante o comparte estructura.
+        # Buscamos el div del selector de gerencia dentro de la sección de llamamientos.
+        selector_gerencia = page.locator("div[id*='gerenciaUNSOM']").first
+        if await selector_gerencia.count() == 0:
+            selector_gerencia = page.locator("div[id*='j_idt43']").first
+
+        print("Abriendo el menú de Gerencia del Bloque 3...")
+        await selector_gerencia.click()
         await page.wait_for_timeout(1000)
         
-        print("Pulsando el primer botón 'Seleccionar' para ir a Categorías...")
-        # Pulsamos el botón 'Seleccionar' que está dentro del bloque de llamamientos (el tercero de la página)
-        boton_seleccionar_1 = page.locator("button:has-text('Seleccionar')").nth(2)
+        print("Seleccionando Hospital Dr. Negrín...")
+        # Hacemos clic en la opción del Negrín dentro del panel explícito que vimos en tus capturas
+        await page.click("div[id*='gerenciaUNSOM_panel'] li[data-label='Hospital Universitario de Gran Canaria Doctor Negrín']")
+        await page.wait_for_timeout(1000)
+        
+        print("Pulsando el botón 'Seleccionar' del bloque 3...")
+        # Buscamos el botón 'Seleccionar' que ejecute la acción del formulario de llamamientos
+        boton_seleccionar_1 = page.locator("button[id*='btnSeleccionarGerenciaUNSOM']").first
+        if await boton_seleccionar_1.count() == 0:
+            # Si el ID cambia, usamos el botón 'Seleccionar' que esté más cerca del texto del bloque 3
+            boton_seleccionar_1 = page.locator("text=Seleccionar").nth(2)
         
         async with page.expect_navigation(wait_until="networkidle", timeout=20000):
             await boton_seleccionar_1.click()
             
-        print("¡Redirección exitosa! Ya estamos en la página de Categorías.")
-        await page.wait_for_timeout(1500)
+        print("¡Redirección exitosa! Procesando página de Categorías...")
+        await page.wait_for_timeout(2000)
 
         # PASO 3: Seleccionar la categoría FISIOTERAPEUTA
         print("Abriendo desplegable de Categorías...")
-        # En esta nueva pantalla, el combo de categorías es el primero disponible
-        await page.locator(".ui-selectonemenu").first.click()
-        await page.wait_for_timeout(800)
-        
-        print("Seleccionando FISIOTERAPEUTA...")
-        await page.click("li:has-text('FISIOTERAPEUTA')")
+        # En la nueva página (categorias.xhtml), el selector de categoría usará la marca UNSOM
+        selector_categoria = page.locator("div[id*='categoriaUNSOM']").first
+        await selector_categoria.click()
         await page.wait_for_timeout(1000)
         
-        print("Pulsando el segundo botón 'Seleccionar' para ver los resultados...")
-        # Pulsamos el botón Seleccionar de esta segunda pantalla para cargar los datos finales
-        boton_seleccionar_2 = page.locator("button:has-text('Seleccionar')").first
+        print("Seleccionando FISIOTERAPEUTA...")
+        await page.click("div[id*='categoriaUNSOM_panel'] li[data-label='FISIOTERAPEUTA']")
+        await page.wait_for_timeout(1000)
+        
+        print("Pulsando el botón 'Seleccionar' final para ver resultados...")
+        boton_seleccionar_2 = page.locator("button[id*='btnBuscarLlamamientos']").first
+        if await boton_seleccionar_2.count() == 0:
+            boton_seleccionar_2 = page.locator("text=Seleccionar").first
         
         async with page.expect_navigation(wait_until="networkidle", timeout=20000):
             await boton_seleccionar_2.click()
             
-        print("Esperando renderizado de las tablas de datos...")
-        await page.wait_for_timeout(2500)
+        print("Esperando tablas de resultados...")
+        await page.wait_for_timeout(3000)
 
         # PASO 4: Analizar las tablas de resultados finales
         print("Extrayendo información de las tablas...")
@@ -82,7 +95,7 @@ async def consultar_llamamientos():
         tablas = soup.find_all("table")
         
         if not tablas:
-            print("Error: No se localizaron las tablas en la pantalla final.")
+            print("Error: No se localizaron las tablas de resultados.")
             return
 
         lineas_mensaje = []
@@ -106,10 +119,10 @@ async def consultar_llamamientos():
             lineas_mensaje.append("")
 
         if not datos_control:
-            print("Las tablas no contenían datos de filas válidos.")
+            print("Tablas sin datos legibles.")
             return
 
-        # PASO 5: Comprobación de cambios y envío de alerta
+        # PASO 5: Control de cambios
         estado_anterior = ""
         if os.path.exists(FICHERO_ESTADO):
             with open(FICHERO_ESTADO, "r", encoding="utf-8") as f:
@@ -125,9 +138,9 @@ async def consultar_llamamientos():
             mensaje_final += f"\n🔗 [Verificar en la Web]({url_base})"
             
             enviar_telegram(mensaje_final)
-            print("¡Éxito! Notificación enviada a Telegram.")
+            print("Notificación enviada a Telegram.")
         else:
-            print("Sin cambios en los listados de llamamientos.")
+            print("Sin cambios detectados.")
 
 if __name__ == "__main__":
     asyncio.run(consultar_llamamientos())
