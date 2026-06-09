@@ -57,10 +57,10 @@ def consultar_llamamientos_directo():
         vs_2 = extraer_view_state(r_categorias.text)
         
         if not vs_2:
-            print("Error: El servidor rechazó la primera fase (ViewState 2 no recibido).")
+            print("Error: El servidor rechazó la primera fase.")
             return
 
-        # Paso 3: Enviar Categoría Fisioterapeuta (Valor 97) a la URL correcta
+        # Paso 3: Enviar Categoría Fisioterapeuta (Valor 97)
         print("Paso 3: Enviando selección de Categoría (FISIOTERAPEUTA)...")
         payload_categoria = {
             "j_idt13": "j_idt13",
@@ -72,7 +72,7 @@ def consultar_llamamientos_directo():
         
         r_final = session.post(url_cat, data=payload_categoria, timeout=15)
         
-        # Paso 4: Procesar la tabla de resultados finales
+        # Paso 4: Procesar la tabla de resultados finales (CON FILTRO CORRECTO)
         print("Paso 4: Analizando tabla final de resultados...")
         soup_final = BeautifulSoup(r_final.text, "html.parser")
         tablas = soup_final.find_all("table")
@@ -90,21 +90,29 @@ def consultar_llamamientos_directo():
                 break
             
             filas_datos = [fila for fila in tabla.find_all("tr") if fila.find("td")]
+            contenido_tabla_añadido = False
 
             if filas_datos:
-                lineas_mensaje.append(titulos_tablas[i])
+                bloque_actual = []
                 for fila in filas_datos:
                     celdas = [c.get_text(strip=True) for c in fila.find_all("td")]
                     if len(celdas) >= 3:
-                        tipo, pos_gerencia, pos_global = celdas[0], celdas[1], celdas[2]
-                        pos_gerencia = pos_gerencia if pos_gerencia else "-"
-                        pos_global = pos_global if pos_global else "-"
-                        lineas_mensaje.append(f"  • {tipo} ➔ Gerencia: `{pos_gerencia}` | Global: `{pos_global}`")
-                        datos_control += f"{tipo}:{pos_gerencia}-{pos_global}|"
-                lineas_mensaje.append("")
+                        tipo = celdas[0]
+                        # FILTRO FACTUAL: Ignoramos textos informativos, solo procesamos datos reales de listas
+                        if any(keyword in tipo for keyword in ["Corta duración", "Larga duración", "Interinidad"]):
+                            pos_gerencia = celdas[1] if celdas[1] else "-"
+                            pos_global = celdas[2] if celdas[2] else "-"
+                            bloque_actual.append(f"  • {tipo} ➔ Gerencia: `{pos_gerencia}` | Global: `{pos_global}`")
+                            datos_control += f"{tipo}:{pos_gerencia}-{pos_global}|"
+                            contenido_tabla_añadido = True
+                
+                if contenido_tabla_añadido:
+                    lineas_mensaje.append(titulos_tablas[i])
+                    lineas_mensaje.extend(bloque_actual)
+                    lineas_mensaje.append("")
 
         if not datos_control:
-            print("Estructura correcta pero las tablas no contienen filas numéricas.")
+            print("Estructura analizada pero vacía de números legítimos.")
             return
 
         # Control de Persistencia y Alerta en Telegram
@@ -123,9 +131,9 @@ def consultar_llamamientos_directo():
             mensaje_final += f"\n🔗 [Verificar Web]({url_base})"
             
             enviar_telegram(mensaje_final)
-            print("¡Éxito! Datos extraídos y notificación enviada.")
+            print("¡Éxito! Datos limpios extraídos y notificación enviada.")
         else:
-            print("Sin novedades. Los datos coinciden con el último registro.")
+            print("Sin novedades. Los datos numéricos coinciden exactamente.")
 
     except Exception as e:
         print(f"Fallo en la conexión directa: {e}")
