@@ -20,80 +20,56 @@ async def consultar_llamamientos():
     url_base = "https://www3.gobiernodecanarias.org/sanidad/scs/ConsultaSIGLE/index.xhtml"
     
     async with async_playwright() as p:
-        print("Lanzando navegador virtual...")
+        print("Iniciando navegador...")
         browser = await p.chromium.launch(headless=True)
-        
         context = await browser.new_context(
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            locale="es-ES",
-            viewport={"width": 1280, "height": 720}
+            locale="es-ES"
         )
         page = await context.new_page()
         
-        print(f"Conectando a la Home: {url_base}")
-        await page.goto(url_base, wait_until="networkidle", timeout=30000)
+        print(f"Abriendo Home: {url_base}")
+        await page.goto(url_base, wait_until="networkidle")
         
-        # PASO CRÍTICO: Localizar y pulsar la pestaña o botón de "Últimos llamamientos"
-        # para que el servidor JSF transmute la interfaz al formulario UNSOM
-        print("Buscando el botón de cambio a 'Últimos llamamientos'...")
-        
-        # Intentamos por texto en cualquier elemento interactivo (enlace, botón, pestaña)
-        pestana = page.get_by_text("Últimos llamamientos", exact=False)
-        
-        if await pestana.count() > 0:
-            print("Pestaña localizada. Pulsando para cambiar de formulario...")
-            await pestana.first.click()
-            await page.wait_for_timeout(2000) # Tiempo para que PrimeFaces refresque el DOM via Ajax
-        else:
-            print("Aviso: No se localizó texto explícito. Intentando clic por selectores comunes de menú...")
-            # Alternativa por si es un elemento de lista o menú de PrimeFaces
-            await page.click("text=Últimos llamamientos")
-            await page.wait_for_timeout(2000)
-
-        # 3. Esperar a que el formulario UNSOM esté pintado en pantalla
-        print("Comprobando si el formulario de llamamientos se ha renderizado...")
-        # Buscamos el contenedor genérico del formulario si el ID estricto falla
-        await page.wait_for_selector("form#formulario", timeout=20000)
-        
-        # Forzamos una comprobación de selectores disponibles para depurar si vuelve a fallar
-        html_actual = await page.content()
-        if "gerenciaUNSOM" not in html_actual:
-            print("El formulario cambió pero no es el UNSOM esperado. Intentando forzar selectores estándar...")
-            # Si no ha mutado el ID, es que usa el mismo contenedor para ambos paneles
-            id_prefix = "formulario:gerenciaSOM" if "gerenciaSOM" in html_actual else "formulario:gerencia"
-        else:
-            id_prefix = "formulario:gerenciaUNSOM"
-
-        print(f"Usando prefijo de componentes: {id_prefix}")
-        cat_prefix = id_prefix.replace("gerencia", "categoria")
-
-        # 4. Seleccionar la Gerencia (Negrín)
-        print("Abriendo desplegable de Gerencias...")
-        await page.click(f"div[id='{id_prefix}'] span.ui-selectonemenu-trigger")
-        await page.wait_for_timeout(800)
-        
-        print("Seleccionando Hospital Dr. Negrín...")
-        await page.click(f"div[id='{id_prefix}_panel'] li[data-label='Hospital Universitario de Gran Canaria Doctor Negrín']")
+        print("Pulsando en 'Últimos llamamientos'...")
+        await page.click("text=Últimos llamamientos")
+        await page.wait_for_load_state("networkidle")
         await page.wait_for_timeout(1500)
 
-        # 5. Seleccionar la Categoría (FISIOTERAPEUTA)
-        print("Abriendo desplegable de Categorías...")
-        await page.click(f"div[id='{cat_prefix}'] span.ui-selectonemenu-trigger")
+        # PASO 1: SELECCIÓN DE GERENCIA (Pantalla Inicial)
+        print("Abriendo el menú de Gerencia...")
+        # Hacemos clic en el primer (y único) desplegable disponible en esta pantalla
+        await page.locator(".ui-selectonemenu").first.click()
+        await page.wait_for_timeout(800)
+        
+        print("Seleccionando Hospital Dr. Negrín y esperando recarga de página...")
+        # Al hacer clic en la opción, el navegador DEBE esperar una recarga/navegación automática
+        async with page.expect_navigation(wait_until="networkidle", timeout=20000):
+            await page.click("li:has-text('Hospital Universitario de Gran Canaria Doctor Negrín')")
+        
+        print("¡Primera recarga completada con éxito!")
+        await page.wait_for_timeout(2000)
+
+        # PASO 2: SELECCIÓN DE CATEGORÍA (Nueva Pantalla)
+        print("Buscando el nuevo selector de Categoría en la página cargada...")
+        # En esta nueva pantalla, el desplegable de categorías debería estar listo
+        await page.locator(".ui-selectonemenu").first.click()
         await page.wait_for_timeout(800)
         
         print("Seleccionando FISIOTERAPEUTA...")
-        await page.click(f"div[id='{cat_prefix}_panel'] li[data-label='FISIOTERAPEUTA']")
+        await page.click("li:has-text('FISIOTERAPEUTA')")
         await page.wait_for_timeout(1500)
 
-        # 6. Clic en Buscar
-        print("Pulsando botón de búsqueda...")
-        # Buscamos el botón de buscar dentro de ese formulario mutado
-        boton_buscar = page.locator("button[id*='btnBuscar']")
-        await boton_buscar.first.click()
-        await page.wait_for_timeout(3000) # Esperamos el refresco de las tablas de datos
+        # PASO 3: BOTÓN BUSCAR
+        print("Pulsando el botón Buscar final...")
+        async with page.expect_navigation(wait_until="networkidle", timeout=20000):
+            await page.click("button:has-text('Buscar')")
+        
+        print("Esperando la carga de las tablas de resultados...")
+        await page.wait_for_timeout(3000)
 
-        # 7. Capturar los resultados finales
-        print("Procesando tablas de resultados...")
+        # PASO 4: EXTRACCIÓN DE DATOS
+        print("Analizando resultados finales...")
         html = await page.content()
         await browser.close()
         
@@ -101,7 +77,7 @@ async def consultar_llamamientos():
         tablas = soup.find_all("table")
         
         if not tablas:
-            print("Error: No se localizaron las tablas tras la búsqueda.")
+            print("Error: No se encontró ninguna tabla de resultados. Comprueba si el botón Buscar falló.")
             return
 
         lineas_mensaje = []
@@ -125,10 +101,10 @@ async def consultar_llamamientos():
             lineas_mensaje.append("")
 
         if not datos_control:
-            print("Estructura de tablas vacía de contenido indexable.")
+            print("Tablas detectadas pero vacías por dentro.")
             return
 
-        # Lógica de persistencia de alertas
+        # Control de persistencia
         estado_anterior = ""
         if os.path.exists(FICHERO_ESTADO):
             with open(FICHERO_ESTADO, "r", encoding="utf-8") as f:
@@ -144,10 +120,9 @@ async def consultar_llamamientos():
             mensaje_final += f"\n🔗 [Verificar Web]({url_base})"
             
             enviar_telegram(mensaje_final)
-            print("Cambio guardado. Notificación enviada a Telegram.")
+            print("Cambio o inicio detectado. Mensaje enviado a Telegram.")
         else:
-            print("Los datos coinciden exactamente con el último registro. Sin cambios.")
+            print("Sin novedades en los llamamientos.")
 
 if __name__ == "__main__":
-    import asyncio
     asyncio.run(consultar_llamamientos())
