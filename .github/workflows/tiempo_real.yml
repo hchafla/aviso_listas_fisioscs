@@ -2,10 +2,9 @@ name: Monitor SCS Tiempo Real
 
 on:
   schedule:
-    # Se ejecuta cada 15 minutos (:00, :15, :30, :45)
-    # de lunes a viernes (1-5), entre las 07:00 y las 16:00 UTC
+    # Cada 15 minutos de lunes a viernes, entre las 07:00 y las 16:00 UTC
     - cron: '0,15,30,45 7-16 * * 1-5'
-  workflow_dispatch: # Permite ejecución manual
+  workflow_dispatch:
 
 jobs:
   check-scs:
@@ -18,24 +17,28 @@ jobs:
     - name: Configurar entorno de Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.10' # <--- CORREGIDO: Ahora está bien escrito
+        python-version: '3.10'
 
-    - name: Instalar librerías necesarias
+    - name: Instalar librerías básicas
       run: |
         python -m pip install --upgrade pip
-        pip install requests beautifulsoup4
+        pip install requests beautifulsoup4 playwright
 
-    - name: Ejecutar consulta en tiempo real
+    - name: Instalar Navegador Chromium para Playwright
+      run: |
+        python -m playwright install chromium
+
+    - name: Ejecutar consulta con Navegador Emulado
       env:
         TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
         TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true # <--- CORREGIDO: Evita el aviso de depreciación de Node
+        FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       run: python tiempo_real.py
 
     - name: Guardar estado si ha cambiado
       run: |
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
-        git add ultimo_estado_fisio.txt || true
+        git add ultimo_estado_llamamientos.txt || true
         git commit -m "Actualizar estado de control de llamamientos [skip ci]" -a || true
         git push || true
