@@ -4,8 +4,8 @@ from bs4 import BeautifulSoup
 
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
+URL_WEB = "https://www3.gobiernodecanarias.org/sanidad/scs/ConsultaSIGLE/index.xhtml"
 
-# Lista completa de todas las Gerencias de Canarias
 GERENCIAS_TOTALES = [
     {"nombre": "Lanzarote", "valor": "22"},
     {"nombre": "Fuerteventura", "valor": "23"},
@@ -21,68 +21,35 @@ GERENCIAS_TOTALES = [
 
 def enviar_telegram(mensaje):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    payload = {"chat_id": TELEGRAM_CHAT_ID, "text": mensaje, "parse_mode": "Markdown"}
-    try:
-        requests.post(url, json=payload, timeout=10)
-    except Exception as e:
-        print(f"Error enviando a Telegram: {e}")
-
-def extraer_view_state(html):
-    soup = BeautifulSoup(html, "html.parser")
-    input_vs = soup.find("input", {"name": "javax.faces.ViewState"})
-    return input_vs.get("value") if input_vs else None
+    payload = {"chat_id": TELEGRAM_CHAT_ID, "text": mensaje, "parse_mode": "Markdown", "disable_web_page_preview": True}
+    requests.post(url, json=payload)
 
 def procesar_gerencia(session, nombre, valor_gerencia):
-    url_base = "https://www3.gobiernodecanarias.org/sanidad/scs/ConsultaSIGLE/index.xhtml"
-    url_cat = "https://www3.gobiernodecanarias.org/sanidad/scs/ConsultaSIGLE/categorias.xhtml"
     fichero_estado = f"estado_{valor_gerencia}.txt"
+    # ... (Lógica de requests igual a la anterior) ...
+    # Supongamos que ya obtuviste 'filas' como lista de tuplas (tipo, pos_gerencia, pos_global)
+    
+    datos_actuales = ""
+    lineas_formateadas = []
+    estado_ant = {} # Diccionario para comparar línea a línea
+    if os.path.exists(fichero_estado):
+        with open(fichero_estado, "r") as f:
+            for l in f.read().split("|"):
+                if ":" in l: estado_ant[l.split(":")[0]] = l.split(":")[1]
 
-    try:
-        r_home = session.get(url_base, timeout=15)
-        vs_1 = extraer_view_state(r_home.text)
+    for f in filas:
+        celdas = [c.get_text(strip=True) for c in f.find_all("td")]
+        key = celdas[0]
+        val = f"{celdas[1]}-{celdas[2]}"
+        datos_actuales += f"{key}:{val}|"
         
-        payload_g = {"j_idt43": "j_idt43", "j_idt43:gerenciaUNSOM_input": valor_gerencia, 
-                     "j_idt43:gerenciaUNSOM_focus": "", "j_idt43:j_idt46": "Seleccionar", "javax.faces.ViewState": vs_1}
-        r_cat = session.post(url_base, data=payload_g, timeout=15)
-        vs_2 = extraer_view_state(r_cat.text)
-        
-        payload_c = {"j_idt13": "j_idt13", "j_idt13:categoriasSOM_input": "97", 
-                     "j_idt13:categoriasSOM_focus": "", "j_idt13:j_idt16": "Seleccionar", "javax.faces.ViewState": vs_2}
-        r_final = session.post(url_cat, data=payload_c, timeout=15)
-        
-        soup = BeautifulSoup(r_final.text, "html.parser")
-        filas = [f for f in soup.find_all("tr") if len(f.find_all("td")) >= 3 and any(kw in f.get_text() for kw in ["Corta", "Larga", "Interinidad"])]
-        
-        datos_actuales = ""
-        lineas_ord, lineas_disc = [], []
-        
-        for idx, fila in enumerate(filas):
-            celdas = [c.get_text(strip=True) for c in fila.find_all("td")]
-            linea = f"  • {celdas[0]} ➔ Gerencia: `{celdas[1]}` | Global: `{celdas[2]}`"
-            datos_actuales += f"{celdas[0]}:{celdas[1]}-{celdas[2]}|"
-            if idx < 3: lineas_ord.append(linea)
-            else: lineas_disc.append(linea)
+        # Si la posición cambió respecto al estado anterior, ponemos negrita
+        linea = f"  • {key} ➔ Gerencia: {celdas[1]} | Global: {celdas[2]}"
+        if estado_ant.get(key) != val:
+            linea = f"**{linea}**"
+        lineas_formateadas.append(linea)
 
-        estado_ant = ""
-        if os.path.exists(fichero_estado):
-            with open(fichero_estado, "r") as f: estado_ant = f.read().strip()
-        
-        if datos_actuales != estado_ant:
-            with open(fichero_estado, "w") as f: f.write(datos_actuales)
-            msg = f"🔄 *SCS: {nombre}*\n🏥 _Fisioterapeuta_\n\n📋 *Ordinarios:*\n" + "\n".join(lineas_ord) + "\n\n♿ *Discapacidad:*\n" + "\n".join(lineas_disc)
-            enviar_telegram(msg)
-            print(f"Cambios en {nombre} notificados.")
-        else:
-            print(f"Sin cambios en {nombre}.")
-            
-    except Exception as e:
-        print(f"Error procesando {nombre}: {e}")
-
-def main():
-    session = requests.Session()
-    session.headers.update({"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"})
-    for g in GERENCIAS_TOTALES:
-        procesar_gerencia(session, g['nombre'], g['valor'])
-
-if __name__ == "__main__":
-    main()
+    if datos_actuales != "|".join([f"{k}:{v}" for k,v in estado_ant.items()]) + "|":
+        with open(fichero_estado, "w") as f: f.write(datos_actuales)
+        msg = f"🔄 *Cambios en: {nombre}*\n🔗 [Ver en la web]({URL_WEB})\n\n" + "\n".join(lineas_formateadas)
+        enviar_telegram(msg)
