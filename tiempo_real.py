@@ -15,37 +15,42 @@ def enviar_telegram(mensaje):
         print(f"Error enviando a Telegram: {e}")
 
 def consultar_llamamientos_scs():
-    url_home = "https://www3.gobiernodecanarias.org/sanidad/scs/ConsultaSIGLE/index.xhtml"
     url_portal = "https://www3.gobiernodecanarias.org/sanidad/scs/ConsultaSIGLE/categorias.xhtml"
     
     session = requests.Session()
+    # Cabeceras de simulación completa para evitar que PrimeFaces corte la conexión
     session.headers.update({
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-        "Accept-Language": "es-ES,es;q=0.9"
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
+        "Connection": "keep-alive",
+        "Cache-Control": "max-age=0",
+        "Upgrade-Insecure-Requests": "1"
     })
 
     try:
-        # Step 1: Entrar a la HOME para inicializar la cookie de sesión (JSESSIONID)
-        print("Estableciendo sesión inicial en la Home...")
-        session.get(url_home, timeout=15)
+        # Petición directa a la sección de categorías simulando una navegación orgánica limpia
+        print("Solicitando formulario de llamamientos...")
+        r_portal = session.get(url_portal, timeout=20)
         
-        # Step 2: Cargar la página de categorías usando la sesión ya abierta
-        print("Cargando el formulario de llamamientos...")
-        r_portal = session.get(url_portal, timeout=15)
         soup_inicio = BeautifulSoup(r_portal.text, "html.parser")
         
+        # Intentamos localizar el ViewState buscando variaciones del componente JSF
         view_state_input = soup_inicio.find("input", {"name": "javax.faces.ViewState"})
+        
         if not view_state_input:
-            print("Error persistente: No se localiza el ViewState.")
-            # Si vuelve a fallar, imprimimos los primeros 500 caracteres para ver qué responde el SCS
-            print(f"Muestra del HTML recibido:\n{r_portal.text[:500]}")
+            # Intento de rescate alternativo si el ID está formateado de forma distinta
+            view_state_input = soup_inicio.find(id=lambda x: x and "ViewState" in x)
+
+        if not view_state_input:
+            print("Error: El servidor del SCS bloqueó el formulario completo.")
+            print(f"Longitud del HTML devuelto: {len(r_portal.text)} bytes (Si es menor de 5000, está capado)")
             return
             
-        view_state = view_state_input["value"]
-        print(f"ViewState localizado con éxito: {view_state[:20]}...")
+        view_state = view_state_input.get("value")
+        print(f"ViewState capturado con éxito de forma limpia.")
 
-        # Step 3: Construcción del Payload con los parámetros UNSOM
+        # Payload definitivo mapeado con las variables UNSOM (Últimos Nombramientos)
         payload = {
             "formulario": "formulario",
             "formulario:gerenciaUNSOM_input": "Hospital Universitario de Gran Canaria Doctor Negrín",
@@ -56,15 +61,13 @@ def consultar_llamamientos_scs():
             "javax.faces.ViewState": view_state
         }
 
-        # Step 4: Envío de la consulta
-        print("Enviando parámetros de búsqueda...")
-        r_resultado = session.post(url_portal, data=payload, timeout=15)
+        print("Enviando petición de extracción de datos...")
+        r_resultado = session.post(url_portal, data=payload, timeout=20)
         soup_resultado = BeautifulSoup(r_resultado.text, "html.parser")
 
-        # Step 5: Procesamiento de tablas
         tablas = soup_resultado.find_all("table")
         if not tablas:
-            print("No se encontraron tablas en el HTML de respuesta.")
+            print("No se encontraron tablas de datos. El servidor rechazó los parámetros del formulario.")
             return
 
         lineas_mensaje = []
@@ -94,10 +97,10 @@ def consultar_llamamientos_scs():
             lineas_mensaje.append("")
 
         if not datos_control:
-            print("Tablas localizadas pero sin celdas de datos legibles.")
+            print("Estructura de tabla localizada pero sin datos legibles.")
             return
 
-        # Step 6: Control de cambios
+        # Lógica de verificación contra el estado guardado
         estado_anterior = ""
         if os.path.exists(FICHERO_ESTADO):
             with open(FICHERO_ESTADO, "r", encoding="utf-8") as f:
@@ -110,15 +113,15 @@ def consultar_llamamientos_scs():
             mensaje_final = "🔄 *SCS TIEMPO REAL: ACTUALIZACIÓN DE LLAMAMIENTOS*\n"
             mensaje_final += "🏥 _Hospital Dr. Negrín — FISIOTERAPEUTA_\n\n"
             mensaje_final += "\n".join(lineas_mensaje)
-            mensaje_final += f"🔗 [Verificar en la Web Oficial del SCS]({url_portal})"
+            mensaje_final += f"🔗 [Verificar en la Web Oficial]({url_portal})"
             
             enviar_telegram(mensaje_final)
-            print("Datos procesados correctamente. Mensaje enviado a Telegram.")
+            print("Proceso finalizado. Mensaje enviado a Telegram.")
         else:
-            print("Los datos coinciden con el registro previo. Sin cambios.")
+            print("Sin novedades en las listas.")
 
     except Exception as e:
-        print(f"Error crítico en la ejecución: {e}")
+        print(f"Fallo durante la ejecución del script: {e}")
 
 if __name__ == "__main__":
     consultar_llamamientos_scs()
