@@ -55,21 +55,16 @@ def extraer_datos_chuimi():
         print("No se localizó la fila de Fisioterapeuta General.")
         return None
 
-    # Extraemos todos los números aislados (ej: 389, 445) y todas las fechas (ej: 25/05/2026)
-    # Eliminamos la palabra GENERAL para que no interfiera si contiene números raros.
     texto_procesar = texto_fila_general.replace("GENERAL", "")
     
     fechas = re.findall(r"\d{2}/\d{2}/\d{4}", texto_procesar)
-    # Para los números de orden, buscamos dígitos sueltos que no formen parte de una fecha
     numeros = re.findall(r"\b\d+\b", re.sub(r"\d{2}/\d{2}/\d{4}", "", texto_procesar))
-    # Eliminamos el número '2007' si se colara de la cabecera de la OPE
     numeros = [n for n in numeros if n != "2007"]
 
     if len(numeros) < 3 or len(fechas) < 3:
         print(f"Estructura de datos incompleta. Números: {numeros}, Fechas: {fechas}")
         return None
 
-    # Asignamos los valores siguiendo el orden secuencial de aparición en el texto
     corta = f"{numeros[0]} ({fechas[0]})"
     larga = f"{numeros[1]} ({fechas[1]})"
     interinidad = f"{numeros[2]} ({fechas[2]})"
@@ -94,12 +89,26 @@ def controlar_cambios():
         except:
             c_ant, l_ant, i_ant = "Ninguno", "Ninguno", "Ninguno"
 
+        # Evaluamos individualmente qué ha cambiado para aplicar la negrita selectiva
+        linea_corta = f"• Corta Duración: {c_ant} ➔ {c_act}"
+        if c_act != c_ant:
+            linea_corta = f"• **Corta Duración: {c_ant} ➔ {c_act}**"
+
+        linea_larga = f"• Larga Duración: {l_ant} ➔ {l_act}"
+        if l_act != l_ant:
+            linea_larga = f"• **Larga Duración: {l_ant} ➔ {l_act}**"
+
+        linea_interinidad = f"• Interinidad: {i_ant} ➔ {i_act}"
+        if i_act != i_ant:
+            linea_interinidad = f"• **Interinidad: {i_ant} ➔ {i_act}**"
+
+        # He compactado el formato visual para que ocupe menos espacio en tu pantalla y sea más directo
         mensaje = (
             "⚠️ **[ALERTA] Actualización CHUIMI**\n"
-            "Se han detectado cambios en los llamamientos de *Fisioterapeuta (General)*:\n\n"
-            f"• **Corta Duración:**\n  Antes: {c_ant}\n  Ahora: **{c_act}**\n\n"
-            f"• **Larga Duración:**\n  Antes: {l_ant}\n  Ahora: **{l_act}**\n\n"
-            f"• **Interinidad:**\n  Antes: {i_ant}\n  Ahora: **{i_act}**\n\n"
+            "Cambios detectados en *Fisioterapeuta (General)*:\n\n"
+            f"{linea_corta}\n"
+            f"{linea_larga}\n"
+            f"{linea_interinidad}\n\n"
             f"🔗 [Abrir PDF Oficial]({PDF_URL})"
         )
         
