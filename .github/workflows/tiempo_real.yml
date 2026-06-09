@@ -9,15 +9,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      
       - uses: actions/setup-python@v4
         with:
           python-version: '3.9'
-      - run: pip install requests beautifulsoup4
+          
+      - name: Instalar dependencias
+        run: |
+          pip install requests beautifulsoup4 google-auth google-api-python-client
+          
       - name: Ejecutar script
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
         run: python tiempo_real.py
+        
       - name: Guardar estado
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
