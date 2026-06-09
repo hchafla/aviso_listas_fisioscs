@@ -30,50 +30,67 @@ async def consultar_llamamientos():
         )
         page = await context.new_page()
         
-        # 1. Ir a la página de inicio para abrir sesión legítima
         print(f"Conectando a la Home: {url_base}")
         await page.goto(url_base, wait_until="networkidle", timeout=30000)
         
-        # 2. Hacer clic en el enlace o pestaña que lleva a los Últimos Llamamientos
-        # Buscamos el texto literal del menú basándonos en la miga de pan de tu captura
-        print("Navegando a la sección de Últimos Llamamientos...")
-        link_llamamientos = page.get_by_role("link", name="Últimos llamamientos", exact=False)
+        # PASO CRÍTICO: Localizar y pulsar la pestaña o botón de "Últimos llamamientos"
+        # para que el servidor JSF transmute la interfaz al formulario UNSOM
+        print("Buscando el botón de cambio a 'Últimos llamamientos'...")
         
-        if await link_llamamientos.count() > 0:
-            async with page.expect_navigation(wait_until="networkidle", timeout=20000):
-                await link_llamamientos.first.click()
+        # Intentamos por texto en cualquier elemento interactivo (enlace, botón, pestaña)
+        pestana = page.get_by_text("Últimos llamamientos", exact=False)
+        
+        if await pestana.count() > 0:
+            print("Pestaña localizada. Pulsando para cambiar de formulario...")
+            await pestana.first.click()
+            await page.wait_for_timeout(2000) # Tiempo para que PrimeFaces refresque el DOM via Ajax
         else:
-            # Si no encuentra el enlace por texto, forzamos la url ahora que la cookie está fijada
-            print("Enlace no detectado por texto. Forzando navegación directa por sub-url...")
-            async with page.expect_navigation(wait_until="networkidle", timeout=20000):
-                await page.goto("https://www3.gobiernodecanarias.org/sanidad/scs/ConsultaSIGLE/categorias.xhtml")
+            print("Aviso: No se localizó texto explícito. Intentando clic por selectores comunes de menú...")
+            # Alternativa por si es un elemento de lista o menú de PrimeFaces
+            await page.click("text=Últimos llamamientos")
+            await page.wait_for_timeout(2000)
 
-        # 3. Esperar a que el formulario esté pintado en pantalla
-        print("Esperando renderizado del formulario...")
-        await page.wait_for_selector("div[id='formulario:gerenciaUNSOM']", timeout=20000)
+        # 3. Esperar a que el formulario UNSOM esté pintado en pantalla
+        print("Comprobando si el formulario de llamamientos se ha renderizado...")
+        # Buscamos el contenedor genérico del formulario si el ID estricto falla
+        await page.wait_for_selector("form#formulario", timeout=20000)
         
+        # Forzamos una comprobación de selectores disponibles para depurar si vuelve a fallar
+        html_actual = await page.content()
+        if "gerenciaUNSOM" not in html_actual:
+            print("El formulario cambió pero no es el UNSOM esperado. Intentando forzar selectores estándar...")
+            # Si no ha mutado el ID, es que usa el mismo contenedor para ambos paneles
+            id_prefix = "formulario:gerenciaSOM" if "gerenciaSOM" in html_actual else "formulario:gerencia"
+        else:
+            id_prefix = "formulario:gerenciaUNSOM"
+
+        print(f"Usando prefijo de componentes: {id_prefix}")
+        cat_prefix = id_prefix.replace("gerencia", "categoria")
+
         # 4. Seleccionar la Gerencia (Negrín)
         print("Abriendo desplegable de Gerencias...")
-        await page.click("div[id='formulario:gerenciaUNSOM'] span.ui-selectonemenu-trigger")
-        await page.wait_for_timeout(600)
+        await page.click(f"div[id='{id_prefix}'] span.ui-selectonemenu-trigger")
+        await page.wait_for_timeout(800)
         
         print("Seleccionando Hospital Dr. Negrín...")
-        await page.click("div[id='formulario:gerenciaUNSOM_panel'] li[data-label='Hospital Universitario de Gran Canaria Doctor Negrín']")
-        await page.wait_for_timeout(1200)
+        await page.click(f"div[id='{id_prefix}_panel'] li[data-label='Hospital Universitario de Gran Canaria Doctor Negrín']")
+        await page.wait_for_timeout(1500)
 
         # 5. Seleccionar la Categoría (FISIOTERAPEUTA)
         print("Abriendo desplegable de Categorías...")
-        await page.click("div[id='formulario:categoriaUNSOM'] span.ui-selectonemenu-trigger")
-        await page.wait_for_timeout(600)
+        await page.click(f"div[id='{cat_prefix}'] span.ui-selectonemenu-trigger")
+        await page.wait_for_timeout(800)
         
         print("Seleccionando FISIOTERAPEUTA...")
-        await page.click("div[id='formulario:categoriaUNSOM_panel'] li[data-label='FISIOTERAPEUTA']")
-        await page.wait_for_timeout(1200)
+        await page.click(f"div[id='{cat_prefix}_panel'] li[data-label='FISIOTERAPEUTA']")
+        await page.wait_for_timeout(1500)
 
         # 6. Clic en Buscar
         print("Pulsando botón de búsqueda...")
-        async with page.expect_navigation(wait_until="networkidle", timeout=25000):
-            await page.click("button[id='formulario:btnBuscarLlamamientos']")
+        # Buscamos el botón de buscar dentro de ese formulario mutado
+        boton_buscar = page.locator("button[id*='btnBuscar']")
+        await boton_buscar.first.click()
+        await page.wait_for_timeout(3000) # Esperamos el refresco de las tablas de datos
 
         # 7. Capturar los resultados finales
         print("Procesando tablas de resultados...")
@@ -132,4 +149,5 @@ async def consultar_llamamientos():
             print("Los datos coinciden exactamente con el último registro. Sin cambios.")
 
 if __name__ == "__main__":
+    import asyncio
     asyncio.run(consultar_llamamientos())
