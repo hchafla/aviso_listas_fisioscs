@@ -2,7 +2,6 @@ name: Monitor SCS Tiempo Real
 
 on:
   schedule:
-    # Cada 15 minutos de lunes a viernes, entre las 07:00 y las 16:00 UTC
     - cron: '0,15,30,45 7-16 * * 1-5'
   workflow_dispatch:
 
@@ -21,18 +20,12 @@ jobs:
 
     - name: Instalar librerías básicas
       run: |
-        python -m pip install --upgrade pip
-        pip install requests beautifulsoup4 playwright
+        pip install requests beautifulsoup4
 
-    - name: Instalar Navegador Chromium para Playwright
-      run: |
-        python -m playwright install chromium
-
-    - name: Ejecutar consulta con Navegador Emulado
+    - name: Ejecutar consulta directa por API/POST
       env:
         TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
         TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       run: python tiempo_real.py
 
     - name: Guardar estado si ha cambiado
