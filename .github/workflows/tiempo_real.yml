@@ -1,12 +1,10 @@
 name: Monitor SCS Tiempo Real
 
 on:
-  schedule:
-    - cron: '0,15,30,45 7-16 * * 1-5'
   workflow_dispatch:
 
 jobs:
-  check-scs:
+  audit-scs:
     runs-on: ubuntu-latest
 
     steps:
@@ -18,21 +16,18 @@ jobs:
       with:
         python-version: '3.10'
 
-    - name: Instalar librerías y Playwright
+    - name: Instalar Playwright
       run: |
-        pip install playwright beautifulsoup4 requests
+        pip install playwright
         playwright install chromium
 
-    - name: Ejecutar consulta automatizada
-      env:
-        TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
-        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+    - name: Ejecutar captura de auditoría
       run: python tiempo_real.py
 
-    - name: Guardar estado si ha cambiado
-      run: |
-        git config --local user.email "github-actions[bot]@users.noreply.github.com"
-        git config --local user.name "github-actions[bot]"
-        git add ultimo_estado_llamamientos.txt || true
-        git commit -m "Actualizar estado de control de llamamientos [skip ci]" -a || true
-        git push || true
+    - name: Subir resultados de la auditoría
+      uses: actions/upload-artifact@v4
+      with:
+        name: evidencias-scs
+        path: |
+          evidencia_visual.png
+          codigo_fuente.txt
