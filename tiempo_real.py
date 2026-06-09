@@ -72,49 +72,50 @@ def consultar_llamamientos_directo():
         
         r_final = session.post(url_cat, data=payload_categoria, timeout=15)
         
-        # Paso 4: Procesar resultados separando estrictamente por bloques de tablas ordinarias y discapacidad
-        print("Paso 4: Analizando tablas con segmentación estricta...")
+        # Paso 4: Procesar resultados de manera secuencial estricta
+        print("Paso 4: Extrayendo registros por orden de aparición lineal...")
         soup_final = BeautifulSoup(r_final.text, "html.parser")
         
+        filas_validas = []
+        # Recogemos absolutamente todas las filas de tabla del documento
+        todas_las_filas = soup_final.find_all("tr")
+        
+        for fila in todas_las_filas:
+            celdas = [c.get_text(strip=True) for c in fila.find_all("td")]
+            if len(celdas) >= 3:
+                tipo = celdas[0]
+                # Almacenamos únicamente las celdas numéricas legítimas de las listas
+                if any(kw in tipo for kw in ["Corta duración", "Larga duración", "Interinidad"]):
+                    pos_gerencia = celdas[1] if celdas[1] else "-"
+                    pos_global = celdas[2] if celdas[2] else "-"
+                    filas_validas.append({
+                        "tipo": tipo,
+                        "gerencia": pos_gerencia,
+                        "global": pos_global
+                    })
+
+        # Control estricto de asignación: La web siempre pinta primero las 3 opciones ordinarias
+        # y luego las 3 opciones de discapacidad.
+        if len(filas_validas) < 3:
+            print("Error: No se han encontrado suficientes filas de datos válidas.")
+            return
+
         lineas_ordinario = []
         lineas_discapacidad = []
         datos_control = ""
 
-        tablas = soup_final.find_all("table")
-        
-        for tabla in tablas:
-            texto_completo_tabla = tabla.get_text().lower()
+        for idx, item in enumerate(filas_validas):
+            linea = f"  • {item['tipo']} ➔ Posición en la Gerencia: `{item['gerencia']}` | Posición Global: `{item['global']}`"
             
-            # Clasificación explícita según el texto interno de la tabla contenedora
-            es_discapacidad = "discapacidad" in texto_completo_tabla or "cupo" in texto_completo_tabla
-            
-            filas = tabla.find_all("tr")
-            for fila in filas:
-                celdas = [c.get_text(strip=True) for c in fila.find_all("td")]
-                if len(celdas) >= 3:
-                    tipo = celdas[0]
-                    if any(kw in tipo for kw in ["Corta duración", "Larga duración", "Interinidad"]):
-                        pos_gerencia = celdas[1] if celdas[1] else "-"
-                        pos_global = celdas[2] if celdas[2] else "-"
-                        
-                        # Formateo con las nuevas etiquetas solicitadas
-                        linea = f"  • {tipo} ➔ Posición en la Gerencia: `{pos_gerencia}` | Posición Global: `{pos_global}`"
-                        token_control = f"{tipo}:{pos_gerencia}-{pos_global}"
-                        
-                        if es_discapacidad:
-                            if linea not in lineas_discapacidad:
-                                lineas_discapacidad.append(linea)
-                                datos_control += f"DISC_{token_control}|"
-                        else:
-                            if linea not in lineas_ordinario:
-                                lineas_ordinario.append(linea)
-                                datos_control += f"ORD_{token_control}|"
+            # Las primeras 3 corresponden a Ordinarios, el resto a Discapacidad
+            if idx < 3:
+                lineas_ordinario.append(linea)
+                datos_control += f"ORD_{item['tipo']}:{item['gerencia']}-{item['global']}|"
+            else:
+                lineas_discapacidad.append(linea)
+                datos_control += f"DISC_{item['tipo']}:{item['gerencia']}-{item['global']}|"
 
-        if not datos_control:
-            print("Error: No se pudieron extraer datos numéricos.")
-            return
-
-        # Construcción limpia del mensaje
+        # Construcción del mensaje final para Telegram
         lineas_mensaje = []
         if lineas_ordinario:
             lineas_mensaje.append("📋 *Nombramientos Ordinarios:*")
@@ -126,7 +127,7 @@ def consultar_llamamientos_directo():
             lineas_mensaje.extend(lineas_discapacidad)
             lineas_mensaje.append("")
 
-        # Control de persistencia y envío
+        # Control de persistencia para evitar spam
         estado_anterior = ""
         if os.path.exists(FICHERO_ESTADO):
             with open(FICHERO_ESTADO, "r", encoding="utf-8") as f:
@@ -142,12 +143,12 @@ def consultar_llamamientos_directo():
             mensaje_final += f"🔗 [Verificar Web]({url_base})"
             
             enviar_telegram(mensaje_final)
-            print("Datos actualizados y mensaje enviado correctamente.")
+            print("Datos procesados correctamente y mensaje enviado a Telegram.")
         else:
-            print("Sin novedades en los datos numéricos de las listas.")
+            print("Sin novedades en las listas.")
 
     except Exception as e:
-        print(f"Error en la ejecución del script directo: {e}")
+        print(f"Error crítico en el script: {e}")
 
 if __name__ == "__main__":
     consultar_llamamientos_directo()
