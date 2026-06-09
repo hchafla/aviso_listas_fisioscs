@@ -6,7 +6,6 @@ import pdfplumber
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 
-# URL oficial del PDF de la GAPGC (Gran Canaria)
 PDF_URL = "https://www3.gobiernodecanarias.org/sanidad/scs/content/f91bab10-92f7-11ec-9494-c360bb7ead96/Ultimos-llamamientos-LC-GranCanaria.pdf"
 DB_FILE = "ultimo_gapgc.txt"
 
@@ -87,14 +86,30 @@ def controlar_cambios():
         except:
             ec_ant, el_ant, sc_ant, sl_ant, in_ant = "Ninguno", "Ninguno", "Ninguno", "Ninguno", "Ninguno"
 
+        # Formateo de líneas con negrita condicional para cada una de las 5 listas
+        l_ec = f"• Ev. Corta Duración: {ec_ant} ➔ {ec_act}"
+        if ec_act != ec_ant: l_ec = f"• **Ev. Corta Duración: {ec_ant} ➔ {ec_act}**"
+
+        l_el = f"• Ev. Larga Duración: {el_ant} ➔ {el_act}"
+        if el_act != el_ant: l_el = f"• **Ev. Larga Duración: {el_ant} ➔ {el_act}**"
+
+        l_sc = f"• Sust. Corta Duración: {sc_ant} ➔ {sc_act}"
+        if sc_act != sc_ant: l_sc = f"• **Sust. Corta Duración: {sc_ant} ➔ {sc_act}**"
+
+        l_sl = f"• Sust. Larga Duración: {sl_ant} ➔ {sl_act}"
+        if sl_act != sl_ant: l_sl = f"• **Sust. Larga Duración: {sl_ant} ➔ {sl_act}**"
+
+        l_in = f"• Interinidad: {in_ant} ➔ {in_act}"
+        if in_act != in_ant: l_in = f"• **Interinidad: {in_ant} ➔ {in_act}**"
+
         mensaje = (
             "⚠️ **[ALERTA] Actualización GAP Gran Canaria**\n"
             "Cambios detectados en *Fisioterapeuta*:\n\n"
-            f"• **Ev. Corta Duración:**\n  Antes: {ec_ant}\n  Ahora: **{ec_act}**\n\n"
-            f"• **Ev. Larga Duración:**\n  Antes: {el_ant}\n  Ahora: **{el_act}**\n\n"
-            f"• **Sust. Corta Duración:**\n  Antes: {sc_ant}\n  Ahora: **{sc_act}**\n\n"
-            f"• **Sust. Larga Duración:**\n  Antes: {sl_ant}\n  Ahora: **{sl_act}**\n\n"
-            f"• **Interinidad:**\n  Antes: {in_ant}\n  Ahora: **{in_act}**\n\n"
+            f"{l_ec}\n"
+            f"{l_el}\n"
+            f"{l_sc}\n"
+            f"{l_sl}\n"
+            f"{l_in}\n\n"
             f"🔗 [Abrir PDF Oficial]({PDF_URL})"
         )
         
