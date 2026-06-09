@@ -1,1 +1,1 @@
-Corta duración:129-778|Larga duración:114-707|Interinidad en plaza vacante:88-577|
+ORD_Corta duración:129-778|ORD_Larga duración:114-707|ORD_Interinidad en plaza vacante:88-577|ORD_Corta duración:55-363|ORD_Larga duración:55-363|ORD_Interinidad en plaza vacante:---|
