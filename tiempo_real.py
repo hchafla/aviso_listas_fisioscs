@@ -22,7 +22,10 @@ GERENCIAS_TOTALES = [
 def enviar_telegram(mensaje):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     payload = {"chat_id": TELEGRAM_CHAT_ID, "text": mensaje, "parse_mode": "Markdown", "disable_web_page_preview": True}
-    requests.post(url, json=payload, timeout=15)
+    try:
+        requests.post(url, json=payload, timeout=15)
+    except Exception as e:
+        print(f"Error enviando a Telegram: {e}")
 
 def extraer_view_state(html):
     soup = BeautifulSoup(html, "html.parser")
@@ -30,9 +33,9 @@ def extraer_view_state(html):
     return input_vs.get("value") if input_vs else None
 
 def procesar_gerencia(session, nombre, valor_gerencia):
-    fichero_estado = f"estado_{valor_gerencia}.txt"
     url_base = "https://www3.gobiernodecanarias.org/sanidad/scs/ConsultaSIGLE/index.xhtml"
     url_cat = "https://www3.gobiernodecanarias.org/sanidad/scs/ConsultaSIGLE/categorias.xhtml"
+    fichero_estado = f"estado_{valor_gerencia}.txt"
 
     try:
         r_home = session.get(url_base, timeout=15)
@@ -47,39 +50,35 @@ def procesar_gerencia(session, nombre, valor_gerencia):
         filas = [f for f in soup.find_all("tr") if len(f.find_all("td")) >= 3 and any(kw in f.get_text() for kw in ["Corta", "Larga", "Interinidad"])]
         
         datos_actuales = ""
-        lineas_formateadas = []
-        estado_ant = {}
+        lineas_ord, lineas_disc = [], []
         
-        # Cargar estado previo
+        # Cargar estado anterior para comparar
+        estado_ant = ""
         if os.path.exists(fichero_estado):
-            with open(fichero_estado, "r") as f:
-                contenido = f.read().strip()
-                if contenido:
-                    for l in contenido.split("|"):
-                        if ":" in l: estado_ant[l.split(":")[0]] = l.split(":")[1]
+            with open(fichero_estado, "r") as f: estado_ant = f.read().strip()
 
-        # Procesar filas
-        for f in filas:
-            celdas = [c.get_text(strip=True) for c in f.find_all("td")]
-            key, val = celdas[0], f"{celdas[1]}-{celdas[2]}"
-            datos_actuales += f"{key}:{val}|"
+        for idx, fila in enumerate(filas):
+            celdas = [c.get_text(strip=True) for c in fila.find_all("td")]
+            info_linea = f"{celdas[0]}:{celdas[1]}-{celdas[2]}"
+            datos_actuales += info_linea + "|"
             
-            linea = f"  • {key} ➔ Gerencia: {celdas[1]} | Global: {celdas[2]}"
-            # Poner en negrita si es un cambio o si es primera ejecución (estado_ant vacío)
-            if estado_ant and estado_ant.get(key) != val:
-                linea = f"**{linea}**"
-            lineas_formateadas.append(linea)
+            # Formato de línea
+            texto_linea = f"  • {celdas[0]} ➔ Gerencia: `{celdas[1]}` | Global: `{celdas[2]}`"
+            
+            # Aplicar negrita si la línea cambió respecto al estado anterior
+            if estado_ant and info_linea not in estado_ant:
+                texto_linea = f"**{texto_linea}**"
+            
+            if idx < 3: lineas_ord.append(texto_linea)
+            else: lineas_disc.append(texto_linea)
 
-        # Decidir si notificar
-        es_primera_vez = not os.path.exists(fichero_estado)
-        if datos_actuales != "|".join([f"{k}:{v}" for k,v in estado_ant.items()]) + "|" or es_primera_vez:
+        if datos_actuales != estado_ant:
             with open(fichero_estado, "w") as f: f.write(datos_actuales)
-            titulo = "✅ *INICIALIZADO*" if es_primera_vez else "🔄 *CAMBIO DETECTADO*"
-            msg = f"{titulo}: {nombre}\n🔗 [Ver en la web]({URL_WEB})\n\n" + "\n".join(lineas_formateadas)
+            msg = f"🔄 *SCS: {nombre}*\n🔗 [Ver en la web]({URL_WEB})\n\n📋 *Ordinarios:*\n" + "\n".join(lineas_ord) + "\n\n♿ *Discapacidad:*\n" + "\n".join(lineas_disc)
             enviar_telegram(msg)
             
     except Exception as e:
-        print(f"Error procesando {nombre}: {e}")
+        print(f"Error en {nombre}: {e}")
 
 def main():
     session = requests.Session()
