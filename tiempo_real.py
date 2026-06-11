@@ -39,10 +39,9 @@ def obtener_servicio_sheets():
         print(f"Error al conectar con Google Sheets API: {e}")
         return None
 
-def registrar_en_sheets(sheets_service, nombre_gerencia, tipo_lista, contrato, num_gerencia, num_global):
+def registrar_en_sheets(sheets_service, nombre_gerencia, tipo_lista, contrato, num_gerencia, num_global, fecha_actual):
     if not sheets_service:
         return
-    fecha_actual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
     try:
         num_g = int(num_gerencia)
@@ -103,30 +102,50 @@ def procesar_gerencia(session, sheets_service, nombre, valor_gerencia):
         
         estado_ant = ""
         if os.path.exists(fichero_estado):
-            with open(fichero_estado, "r") as f: estado_ant = f.read().strip()
+            with open(fichero_estado, "r") as f: 
+                estado_ant = f.read().strip()
 
-        for idx, fila in enumerate(filas):
+        # Primer bucle: construir la cadena de control actual
+        for fila in filas:
             celdas = [c.get_text(strip=True) for c in fila.find_all("td")]
             info_linea = f"{celdas[0]}:{celdas[1]}-{celdas[2]}"
             datos_actuales += info_linea + "|"
-            
-            texto_linea = f"  • {celdas[0]} ➔ Gerencia: `{celdas[1]}` | Global: `{celdas[2]}`"
-            
-            if estado_ant and info_linea not in estado_ant:
-                texto_linea = f"⚠️ {texto_linea}"
-                tipo_lista = "Ordinaria" if idx < 3 else "Discapacidad"
-                registrar_en_sheets(sheets_service, nombre, tipo_lista, celdas[0], celdas[1], celdas[2])
-            
-            if idx < 3: lineas_ord.append(texto_linea)
-            else: lineas_disc.append(texto_linea)
 
+        # Si el estado general cambió, procesamos al detalle línea por línea
         if datos_actuales != estado_ant:
-            with open(fichero_estado, "w") as f: f.write(datos_actuales)
+            # Capturamos la marca de tiempo de la actualización
+            ahora = datetime.now()
+            fecha_sheets = ahora.strftime("%Y-%m-%d %H:%M:%S")
+            fecha_telegram = ahora.strftime("%d/%m/%Y - %H:%M")
+
+            for idx, fila in enumerate(filas):
+                celdas = [c.get_text(strip=True) for c in fila.find_all("td")]
+                info_linea = f"{celdas[0]}:{celdas[1]}-{celdas[2]}"
+                
+                texto_linea = f"  • {celdas[0]} ➔ Gerencia: `{celdas[1]}` | Global: `{celdas[2]}`"
+                
+                # Comprobación estricta contra el historial
+                if estado_ant and (info_linea not in estado_ant):
+                    texto_linea = f"⚠️ {texto_linea}"
+                    tipo_lista = "Ordinaria" if idx < 3 else "Discapacidad"
+                    registrar_en_sheets(sheets_service, nombre, tipo_lista, celdas[0], celdas[1], celdas[2], fecha_sheets)
+                elif not estado_ant:
+                    tipo_lista = "Ordinaria" if idx < 3 else "Discapacidad"
+                    registrar_en_sheets(sheets_service, nombre, tipo_lista, celdas[0], celdas[1], celdas[2], fecha_sheets)
+                
+                if idx < 3: 
+                    lineas_ord.append(texto_linea)
+                else: 
+                    lineas_disc.append(texto_linea)
+
+            with open(fichero_estado, "w") as f: 
+                f.write(datos_actuales)
             
             txt_ord = "\n".join(lineas_ord)
             txt_disc = "\n".join(lineas_disc)
             
-            msg = f"🔄 *SCS: {nombre}*\n🏥 _Fisioterapeuta_\n\n📋 *Ordinarios:*\n{txt_ord}\n\n♿ *Discapacidad:*\n{txt_disc}\n\n🔗 [Ver en la web]({URL_WEB})"
+            # Mensaje con fecha y hora incluidas de forma limpia
+            msg = f"🔄 *SCS: {nombre}*\n📅 _Actualizado: {fecha_telegram}_\n🏥 _Fisioterapeuta_\n\n📋 *Ordinarios:*\n{txt_ord}\n\n♿ *Discapacidad:*\n{txt_disc}\n\n🔗 [Ver en la web]({URL_WEB})"
             enviar_telegram(msg)
             
     except Exception as e:
