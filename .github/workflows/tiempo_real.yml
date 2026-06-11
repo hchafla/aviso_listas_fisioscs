@@ -1,7 +1,7 @@
 name: Monitor SCS
 on:
   schedule:
-    - cron: '0,30 8-15 * * 1-5'
+    - cron: '*/15 8-15 * * 1-5'
   workflow_dispatch:
 
 jobs:
