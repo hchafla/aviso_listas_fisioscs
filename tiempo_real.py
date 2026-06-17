@@ -10,20 +10,21 @@ TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 URL_WEB = "https://www3.gobiernodecanarias.org/sanidad/scs/ConsultaSIGLE/index.xhtml"
 
-# ID de tu hoja de cálculo
+# ID de tu hoja de cálculo para el histórico estadístico
 SPREADSHEET_ID = "1nmfP4nXQ4Oydvic_rZ1K19zCQBinAicHG38MeKUO0MU"
 
+# Mapeo verificado con tus enlaces e hilos específicos del grupo de Fisioterapia
 GERENCIAS_TOTALES = [
-    {"nombre": "Lanzarote", "valor": "22"},
-    {"nombre": "Fuerteventura", "valor": "23"},
-    {"nombre": "CHUIMI", "valor": "24"},
-    {"nombre": "Candelaria", "valor": "25"},
-    {"nombre": "La Palma", "valor": "26"},
-    {"nombre": "La Gomera", "valor": "27"},
-    {"nombre": "El Hierro", "valor": "28"},
-    {"nombre": "Atención Primaria Tenerife", "valor": "30"},
-    {"nombre": "Atención Primaria Gran Canaria", "valor": "20"},
-    {"nombre": "Dr. Negrín", "valor": "21"}
+    {"nombre": "Lanzarote", "valor": "22", "thread_id": 2},
+    {"nombre": "Fuerteventura", "valor": "23", "thread_id": 3},
+    {"nombre": "CHUIMI", "valor": "24", "thread_id": 4},
+    {"nombre": "Candelaria", "valor": "25", "thread_id": 5},
+    {"nombre": "La Palma", "valor": "26", "thread_id": 6},
+    {"nombre": "La Gomera", "valor": "27", "thread_id": 7},
+    {"nombre": "El Hierro", "valor": "28", "thread_id": 8},
+    {"nombre": "Atención Primaria Tenerife", "valor": "30", "thread_id": 9},
+    {"nombre": "Atención Primaria Gran Canaria", "valor": "20", "thread_id": 10},
+    {"nombre": "Dr. Negrín", "valor": "21", "thread_id": 12}
 ]
 
 def obtener_servicio_sheets():
@@ -67,11 +68,19 @@ def registrar_en_sheets(sheets_service, nombre_gerencia, tipo_lista, contrato, n
     except Exception as e:
         print(f"Error al escribir en Google Sheets: {e}")
 
-def enviar_telegram(mensaje):
+def enviar_telegram(mensaje, thread_id):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    payload = {"chat_id": TELEGRAM_CHAT_ID, "text": mensaje, "parse_mode": "Markdown", "disable_web_page_preview": True}
+    payload = {
+        "chat_id": TELEGRAM_CHAT_ID, 
+        "text": mensaje, 
+        "parse_mode": "Markdown", 
+        "disable_web_page_preview": True,
+        "message_thread_id": thread_id
+    }
     try:
-        requests.post(url, json=payload, timeout=15)
+        response = requests.post(url, json=payload, timeout=15)
+        if response.status_code != 200:
+            print(f"Error Telegram Fisio (Hilo {thread_id}): {response.text}")
     except Exception as e:
         print(f"Error enviando a Telegram: {e}")
 
@@ -80,9 +89,11 @@ def extraer_view_state(html):
     input_vs = soup.find("input", {"name": "javax.faces.ViewState"})
     return input_vs.get("value") if input_vs else None
 
-def procesar_gerencia(session, sheets_service, nombre, valor_gerencia):
+def procesar_gerencia(session, sheets_service, nombre, valor_gerencia, thread_id):
     url_base = "https://www3.gobiernodecanarias.org/sanidad/scs/ConsultaSIGLE/index.xhtml"
     url_cat = "https://www3.gobiernodecanarias.org/sanidad/scs/ConsultaSIGLE/categorias.xhtml"
+    
+    # Revertido al nombre original sin prefijo para usar tus archivos actuales
     fichero_estado = f"estado_{valor_gerencia}.txt"
 
     try:
@@ -105,15 +116,12 @@ def procesar_gerencia(session, sheets_service, nombre, valor_gerencia):
             with open(fichero_estado, "r") as f: 
                 estado_ant = f.read().strip()
 
-        # Primer bucle: construir la cadena de control actual
         for fila in filas:
             celdas = [c.get_text(strip=True) for c in fila.find_all("td")]
             info_linea = f"{celdas[0]}:{celdas[1]}-{celdas[2]}"
             datos_actuales += info_linea + "|"
 
-        # Si el estado general cambió, procesamos al detalle línea por línea
         if datos_actuales != estado_ant:
-            # Capturamos la marca de tiempo de la actualización
             ahora = datetime.now()
             fecha_sheets = ahora.strftime("%Y-%m-%d %H:%M:%S")
             fecha_telegram = ahora.strftime("%d/%m/%Y - %H:%M")
@@ -124,7 +132,6 @@ def procesar_gerencia(session, sheets_service, nombre, valor_gerencia):
                 
                 texto_linea = f"  • {celdas[0]} ➔ Gerencia: `{celdas[1]}` | Global: `{celdas[2]}`"
                 
-                # Comprobación estricta contra el historial
                 if estado_ant and (info_linea not in estado_ant):
                     texto_linea = f"⚠️ {texto_linea}"
                     tipo_lista = "Ordinaria" if idx < 3 else "Discapacidad"
@@ -144,19 +151,18 @@ def procesar_gerencia(session, sheets_service, nombre, valor_gerencia):
             txt_ord = "\n".join(lineas_ord)
             txt_disc = "\n".join(lineas_disc)
             
-            # Mensaje con fecha y hora incluidas de forma limpia
-            msg = f"🔄 *SCS: {nombre}*\n📅 _Actualizado: {fecha_telegram}_\n🏥 _Fisioterapeuta_\n\n📋 *Ordinarios:*\n{txt_ord}\n\n♿ *Discapacidad:*\n{txt_disc}\n\n🔗 [Ver en la web]({URL_WEB})"
-            enviar_telegram(msg)
+            msg = f"🔄 *SCS: {nombre}*\n📅 _Actualizado: {fecha_telegram}_\n🏥 *Fisioterapeuta*\n\n📋 *Ordinarios:*\n{txt_ord}\n\n♿ *Discapacidad:*\n{txt_disc}\n\n🔗 [Ver en la web]({URL_WEB})"
+            enviar_telegram(msg, thread_id)
             
     except Exception as e:
         print(f"Error en {nombre}: {e}")
 
 def main():
     session = requests.Session()
-    session.headers.update({"User-Agent": "Mozilla/5.0"})
+    session.headers.update({"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
     sheets_service = obtener_servicio_sheets()
     for g in GERENCIAS_TOTALES:
-        procesar_gerencia(session, sheets_service, g['nombre'], g['valor'])
+        procesar_gerencia(session, sheets_service, g['nombre'], g['valor'], g['thread_id'])
 
 if __name__ == "__main__":
     main()
