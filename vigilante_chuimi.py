@@ -58,7 +58,9 @@ def extraer_datos_chuimi():
     texto_procesar = texto_fila_general.replace("GENERAL", "")
     
     fechas = re.findall(r"\d{2}/\d{2}/\d{4}", texto_procesar)
-    numeros = re.findall(r"\b\d+\b", re.sub(r"\d{2}/\d{2}/\d{4}", "", texto_procesar))
+    
+    # Nueva expresión regular: Captura el número y opcionalmente el guion seguido de letras (ej: 98-S, 6932-LO)
+    numeros = re.findall(r"\b\d+(?:-[A-Z]+)?\b", re.sub(r"\d{2}/\d{2}/\d{4}", "", texto_procesar))
     numeros = [n for n in numeros if n != "2007"]
 
     if len(numeros) < 3 or len(fechas) < 3:
@@ -71,7 +73,7 @@ def extraer_datos_chuimi():
 
     return f"{corta}|{larga}|{interinidad}"
 
-def controlar_cambios():
+def controlar_changes():
     datos_actuales = extraer_datos_chuimi()
     if not datos_actuales:
         return
@@ -89,7 +91,6 @@ def controlar_cambios():
         except:
             c_ant, l_ant, i_ant = "Ninguno", "Ninguno", "Ninguno"
 
-        # Evaluamos individualmente qué ha cambiado para aplicar la negrita selectiva
         linea_corta = f"• Corta Duración: {c_ant} ➔ {c_act}"
         if c_act != c_ant:
             linea_corta = f"• **Corta Duración: {c_ant} ➔ {c_act}**"
@@ -102,7 +103,6 @@ def controlar_cambios():
         if i_act != i_ant:
             linea_interinidad = f"• **Interinidad: {i_ant} ➔ {i_act}**"
 
-        # He compactado el formato visual para que ocupe menos espacio en tu pantalla y sea más directo
         mensaje = (
             "⚠️ **[ALERTA] Actualización CHUIMI**\n"
             "Cambios detectados en *Fisioterapeuta (General)*:\n\n"
@@ -120,4 +120,4 @@ def controlar_cambios():
         print("El documento se mantiene sin cambios para Fisioterapeuta General.")
 
 if __name__ == "__main__":
-    controlar_cambios()
+    controlar_changes()
