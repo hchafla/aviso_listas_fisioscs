@@ -135,6 +135,14 @@ def actualizar_mapeo_pdf(session, valor_gerencia, html_pagina, csv_path):
     try:
         r_pdf = session.post(url_cat, data=payload_pdf, headers=headers_standard, timeout=45)
         content = r_pdf.content
+       
+        # === INICIO DE BLOQUE DE DEPURACIÓN ===
+        print(f"\n--- [DEBUG GERENCIA {valor_gerencia}] ---")
+        print(f"DEBUG STATUS CODE: {r_pdf.status_code}")
+        print(f"DEBUG HEADERS: {dict(r_pdf.headers)}")
+        print(f"DEBUG CONTENT START (Primeros 200 bytes): {content[:200]}")
+        print("-----------------------------------------\n")
+        # === FIN DE BLOQUE DE DEPURACIÓN ===
 
         if r_pdf.status_code != 200 or b"%PDF" not in content[:20]:
             print(f"❌ El servidor no devolvió un flujo binario PDF válido para la gerencia {valor_gerencia}")
