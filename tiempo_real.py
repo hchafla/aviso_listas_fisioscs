@@ -1,8 +1,11 @@
 import os
 import requests
 from bs4 import BeautifulSoup
-from datetime import datetime
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo  # Forzar zona horaria nativa de Canarias
 import json
+import csv
+import pdfplumber
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 
@@ -89,11 +92,82 @@ def extraer_view_state(html):
     input_vs = soup.find("input", {"name": "javax.faces.ViewState"})
     return input_vs.get("value") if input_vs else None
 
+def actualizar_mapeo_pdf(session, valor_gerencia, vs_actual, csv_path):
+    """Simula la petición de descarga del PDF de aspirantes y genera el mapa local"""
+    print(f"⌛ Descargando y procesando PDF de aspirantes para gerencia {valor_gerencia}...")
+    url_cat = "https://www3.gobiernodecanarias.org/sanidad/scs/ConsultaSIGLE/categorias.xhtml"
+    payload_pdf = {
+        "j_idt13": "j_idt13",
+        "j_idt13:categoriasSOM_input": "97",  # ID de Fisio verificado en tu código
+        "j_idt13:j_idt15": "j_idt13:j_idt15",
+        "javax.faces.ViewState": vs_actual
+    }
+    
+    try:
+        r_pdf = session.post(url_cat, data=payload_pdf, timeout=45)
+        if r_pdf.status_code != 200 or b"%PDF" not in r_pdf.content[:10]:
+            print(f"❌ No se pudo obtener un PDF válido del SCS para la gerencia {valor_gerencia}")
+            return {}
+
+        pdf_temp = f"temp_{valor_gerencia}.pdf"
+        with open(pdf_temp, "wb") as f:
+            f.write(r_pdf.content)
+
+        mapeo = {}
+        with pdfplumber.open(pdf_temp) as pdf:
+            for pagina in pdf.pages:
+                tabla = pagina.extract_table()
+                if not tabla:
+                    continue
+                for fila in tabla:
+                    if not fila or len(fila) < 3 or "Orden" in str(fila[0]):
+                        continue
+                    orden_gerencia = str(fila[0]).strip()
+                    nombre_aspirante = str(fila[2]).strip()
+                    if orden_gerencia.isdigit():
+                        mapeo[orden_gerencia] = nombre_aspirante
+
+        with open(csv_path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            for k, v in mapeo.items():
+                writer.writerow([k, v])
+                
+        if os.path.exists(pdf_temp):
+            os.remove(pdf_temp)
+            
+        print(f"✅ Archivo de caché creado: {len(mapeo)} nombres indexados.")
+        return mapeo
+
+    except Exception as e:
+        print(f"Error crítico al procesar PDF de la gerencia {valor_gerencia}: {e}")
+        return {}
+
+def cargar_mapeo_nombres(session, valor_gerencia, vs_actual):
+    """Carga los nombres del CSV local o descarga el PDF si expiró (7 días)"""
+    csv_path = f"mapeo_fisio_{valor_gerencia}.csv"
+    forzar_descarga = True
+
+    if os.path.exists(csv_path):
+        mtime = datetime.fromtimestamp(os.path.getmtime(csv_path))
+        # Si tiene menos de 7 días, usamos el archivo local sin descargar nada de la web
+        if datetime.now() - mtime < timedelta(days=7):
+            forzar_descarga = False
+
+    if forzar_descarga:
+        return actualizar_mapeo_pdf(session, valor_gerencia, vs_actual, csv_path)
+    
+    mapeo = {}
+    with open(csv_path, "r", encoding="utf-8") as f:
+        reader = csv.reader(f)
+        for fila in reader:
+            if len(fila) == 2:
+                mapeo[fila[0]] = fila[1]
+    return mapeo
+
 def procesar_gerencia(session, sheets_service, nombre, valor_gerencia, thread_id):
     url_base = "https://www3.gobiernodecanarias.org/sanidad/scs/ConsultaSIGLE/index.xhtml"
     url_cat = "https://www3.gobiernodecanarias.org/sanidad/scs/ConsultaSIGLE/categorias.xhtml"
     
-    # Revertido al nombre original sin prefijo para usar tus archivos actuales
     fichero_estado = f"estado_{valor_gerencia}.txt"
 
     try:
@@ -104,6 +178,7 @@ def procesar_gerencia(session, sheets_service, nombre, valor_gerencia, thread_id
         vs_2 = extraer_view_state(r_cat.text)
         payload_c = {"j_idt13": "j_idt13", "j_idt13:categoriasSOM_input": "97", "j_idt13:j_idt16": "Seleccionar", "javax.faces.ViewState": vs_2}
         r_final = session.post(url_cat, data=payload_c, timeout=15)
+        vs_final = extraer_view_state(r_final.text)
         
         soup = BeautifulSoup(r_final.text, "html.parser")
         filas = [f for f in soup.find_all("tr") if len(f.find_all("td")) >= 3 and any(kw in f.get_text() for kw in ["Corta", "Larga", "Interinidad"])]
@@ -122,15 +197,21 @@ def procesar_gerencia(session, sheets_service, nombre, valor_gerencia, thread_id
             datos_actuales += info_linea + "|"
 
         if datos_actuales != estado_ant:
-            ahora = datetime.now()
+            # Corrección de zona horaria estricta de Canarias
+            ahora = datetime.now(ZoneInfo("Atlantic/Canary"))
             fecha_sheets = ahora.strftime("%Y-%m-%d %H:%M:%S")
             fecha_telegram = ahora.strftime("%d/%m/%Y - %H:%M")
+
+            # Cargar mapa de nombres correspondiente a esta gerencia específica
+            mapa_nombres = cargar_mapeo_nombres(session, valor_gerencia, vs_final)
 
             for idx, fila in enumerate(filas):
                 celdas = [c.get_text(strip=True) for c in fila.find_all("td")]
                 info_linea = f"{celdas[0]}:{celdas[1]}-{celdas[2]}"
                 
-                texto_linea = f"  • {celdas[0]} ➔ Gerencia: `{celdas[1]}` | Global: `{celdas[2]}`"
+                # Buscamos el nombre del afectado usando el número de corte de gerencia (celdas[1])
+                nombre_persona = mapa_nombres.get(celdas[1], "Nombre no disponible")
+                texto_linea = f"  • {celdas[0]} ➔ Gerencia: `{celdas[1]}` (*{nombre_persona}*) | Global: `{celdas[2]}`"
                 
                 if estado_ant and (info_linea not in estado_ant):
                     texto_linea = f"⚠️ {texto_linea}"
