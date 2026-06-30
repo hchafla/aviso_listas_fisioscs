@@ -1,35 +1,56 @@
-name: Monitor SCS
+name: Monitor SCS Fisio
+
 on:
-  schedule:
-    - cron: '*/15 8-15 * * 1-5'
-  workflow_dispatch:
+  workflow_dispatch: # Activación inmediata desde la API externa de Cron-Job.org
 
 jobs:
-  check-scs:
+  build:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v3
-      
-      - uses: actions/setup-python@v4
-        with:
-          python-version: '3.9'
-          
-      - name: Instalar dependencias
-        run: |
-          pip install requests beautifulsoup4 google-auth google-api-python-client
-          
-      - name: Ejecutar script
-        env:
-          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID_FISIO }}
-          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
-          TZ: Atlantic/Canary
-        run: python tiempo_real.py
+    # 1. Descargar el código del repositorio
+    - name: Checkout del repositorio
+      uses: actions/checkout@v4
+      with:
+        persist-credentials: true
+
+    # 2. Configurar el entorno de Python
+    - name: Configurar Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    # 3. Instalar las dependencias necesarias
+    - name: Instalar dependencias
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then
+          pip install -r requirements.txt
+        else
+          pip install requests beautifulsoup4 google-api-python-client google-auth-oauthlib tzdata pdfplumber
+        fi
+
+    # 4. Ejecutar el script principal
+    - name: Ejecutar Monitor de Fisioterapia
+      env:
+        TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+      run: python tiempo_real_fisio.py
+
+    # 5. Guardar los estados (.txt) y los mapas de nombres (.csv) generados
+    - name: Guardar estados y mapas en el repositorio
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
         
-      - name: Guardar estado
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git add estado_*.txt || true
-          git commit -m "Actualizar estados de gerencias [skip ci]" -a || true
-          git push || true
+        # Añade cambios de manera segura tanto para txt como para csv si existen
+        git add estado_*.txt mapeo_fisio_*.csv || true
+        
+        # Hace el commit solo si hay cambios reales en disco para evitar errores
+        if ! git diff --cached --quiet; then
+          git commit -m "🔄 Actualizar estados e índices de nombres de Fisio [Skip CI]"
+          git push
+        else
+          echo "Sin cambios en el estado o mapas que respaldar."
+        fi
