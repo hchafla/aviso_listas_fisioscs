@@ -95,47 +95,49 @@ def extraer_view_state(html):
     input_vs = soup.find("input", {"name": "javax.faces.ViewState"})
     return input_vs.get("value") if input_vs else None
 
-def actualizar_mapeo_pdf(session, valor_gerencia, vs_actual, csv_path):
+def actualizar_mapeo_pdf(session, valor_gerencia, html_pagina, csv_path):
     print(f"⌛ Descargando y procesando PDF de aspirantes para gerencia {valor_gerencia}...")
     url_cat = "https://www3.gobiernodecanarias.org/sanidad/scs/ConsultaSIGLE/categorias.xhtml"
     
-    # Payload emulado completo simulando la acción nativa de JSF/PrimeFaces para el botón Imprimir
-    payload_pdf = {
-        "javax.faces.partial.ajax": "true",
-        "javax.faces.source": "j_idt13:j_idt15",
-        "javax.faces.partial.execute": "@all",
-        "j_idt13:j_idt15": "j_idt13:j_idt15",
-        "j_idt13": "j_idt13",
-        "j_idt13:categoriasSOM_input": "97",
-        "javax.faces.ViewState": vs_actual
-    }
+    soup = BeautifulSoup(html_pagina, "html.parser")
+    form = soup.find("form", id="j_idt13")
     
-    # Cabeceras específicas requeridas por el framework JavaServer Faces para descargas síncronas
-    headers_ajax = {
-        "Faces-Request": "partial/ajax",
+    if not form:
+        print(f"❌ No se encontró el formulario j_idt13 para la gerencia {valor_gerencia}")
+        if not os.path.exists(csv_path):
+            with open(csv_path, "w", encoding="utf-8") as f: pass
+        return {}
+
+    # Mapeo dinámico y exacto de todo el estado del formulario actualizado
+    payload_pdf = {}
+    for input_tag in form.find_all(["input", "select"]):
+        name = input_tag.get("name")
+        if not name:
+            continue
+        value = input_tag.get("value", "")
+        # Asegurar que el selector mantenga la categoría de Fisioterapeuta
+        if "categoriasSOM_input" in name:
+            payload_pdf[name] = "97"
+        else:
+            payload_pdf[name] = value
+
+    # Forzar la activación síncrona del botón de impresión y el identificador del formulario
+    payload_pdf["j_idt13"] = "j_idt13"
+    payload_pdf["j_idt13:j_idt15"] = "j_idt13:j_idt15"
+    
+    # Cabeceras limpias estándar (sin simulación AJAX que corrompa la respuesta del flujo binario)
+    headers_standard = {
         "Origin": "https://www3.gobiernodecanarias.org",
-        "Referer": url_cat
+        "Referer": url_cat,
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"
     }
     
     try:
-        r_pdf = session.post(url_cat, data=payload_pdf, headers=headers_ajax, timeout=45)
-        
-        # Si el servidor responde con XML parcial en vez de PDF binario directo debido al transporte AJAX
+        r_pdf = session.post(url_cat, data=payload_pdf, headers=headers_standard, timeout=45)
         content = r_pdf.content
-        if b"%PDF" not in content[:20] and b"<form" in content:
-            # Reintento síncrono limpio si el estado requiere fallback estándar sin cabecera parcial
-            payload_fallback = {
-                "j_idt13": "j_idt13",
-                "j_idt13:categoriasSOM_input": "97",
-                "j_idt13:j_idt15": "j_idt13:j_idt15",
-                "javax.faces.ViewState": vs_actual
-            }
-            r_pdf = session.post(url_cat, data=payload_fallback, timeout=45)
-            content = r_pdf.content
 
         if r_pdf.status_code != 200 or b"%PDF" not in content[:20]:
-            print(f"❌ No se pudo obtener un PDF válido del SCS para la gerencia {valor_gerencia}")
-            # Crear un archivo CSV vacío de salvaguarda para que el paso del Workflow de Git no falle
+            print(f"❌ El servidor no devolvió un flujo binario PDF válido para la gerencia {valor_gerencia}")
             if not os.path.exists(csv_path):
                 with open(csv_path, "w", encoding="utf-8") as f: pass
             return {}
@@ -174,7 +176,7 @@ def actualizar_mapeo_pdf(session, valor_gerencia, vs_actual, csv_path):
             with open(csv_path, "w", encoding="utf-8") as f: pass
         return {}
 
-def cargar_mapeo_nombres(session, valor_gerencia, vs_final, csv_path):
+def cargar_mapeo_nombres(session, valor_gerencia, html_pagina, csv_path):
     if os.path.exists(csv_path) and os.path.getsize(csv_path) > 0:
         mtime = datetime.fromtimestamp(os.path.getmtime(csv_path))
         if datetime.now() - mtime < timedelta(days=7):
@@ -185,7 +187,7 @@ def cargar_mapeo_nombres(session, valor_gerencia, vs_final, csv_path):
                     if len(fila) == 2:
                         mapeo[fila[0]] = fila[1]
             return mapeo
-    return actualizar_mapeo_pdf(session, valor_gerencia, vs_final, csv_path)
+    return actualizar_mapeo_pdf(session, valor_gerencia, html_pagina, csv_path)
 
 def procesar_gerencia(sheets_service, nombre, valor_gerencia, thread_id):
     url_base = "https://www3.gobiernodecanarias.org/sanidad/scs/ConsultaSIGLE/index.xhtml"
@@ -195,7 +197,7 @@ def procesar_gerencia(sheets_service, nombre, valor_gerencia, thread_id):
     csv_path = f"mapeo_fisio_{valor_gerencia}.csv"
 
     session = requests.Session()
-    session.headers.update({"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
+    session.headers.update({"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"})
 
     try:
         r_home = session.get(url_base, timeout=15)
@@ -207,7 +209,6 @@ def procesar_gerencia(sheets_service, nombre, valor_gerencia, thread_id):
         
         payload_c = {"j_idt13": "j_idt13", "j_idt13:categoriasSOM_input": "97", "j_idt13:j_idt16": "Seleccionar", "javax.faces.ViewState": vs_2}
         r_final = session.post(url_cat, data=payload_c, timeout=15)
-        vs_final = extraer_view_state(r_final.text)
         
         soup = BeautifulSoup(r_final.text, "html.parser")
         filas = [f for f in soup.find_all("tr") if len(f.find_all("td")) >= 3 and any(kw in f.get_text() for kw in ["Corta", "Larga", "Interinidad"])]
@@ -230,7 +231,7 @@ def procesar_gerencia(sheets_service, nombre, valor_gerencia, thread_id):
             fecha_sheets = ahora.strftime("%Y-%m-%d %H:%M:%S")
             fecha_telegram = ahora.strftime("%d/%m/%Y - %H:%M")
 
-            mapa_nombres = cargar_mapeo_nombres(session, valor_gerencia, vs_final, csv_path)
+            mapa_nombres = cargar_mapeo_nombres(session, valor_gerencia, r_final.text, csv_path)
 
             for idx, fila in enumerate(filas):
                 celdas = [c.get_text(strip=True) for c in fila.find_all("td")]
