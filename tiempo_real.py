@@ -34,7 +34,6 @@ def procesar_gerencia(nombre, valor_gerencia):
     vs_2 = extraer_view_state(r_cat_init.text)
     
     # 4. POST para seleccionar Categoría (Fisioterapeuta = 97)
-    # Se incluyen las cabeceras AJAX críticas que exige PrimeFaces
     payload_c = {
         "j_idt13": "j_idt13", 
         "j_idt13:categoriasSOM_input": "97", 
@@ -59,8 +58,15 @@ def procesar_gerencia(nombre, valor_gerencia):
     if soup.find("form", id="j_idt13"):
         print(f"✅ ÉXITO: Formulario j_idt13 encontrado para {nombre}.")
     else:
-        print(f"❌ ERROR: Formulario no encontrado en {nombre}. Verifica el ViewState o si la sesión fue rechazada.")
+        print(f"❌ ERROR: Formulario no encontrado en {nombre}.")
 
 def main():
-    # Lista reducida para prueba rápida
-    gerencias = [{"nombre": "GAPGC
+    gerencias = [
+        {"nombre": "GAPGC", "valor": "20"}, 
+        {"nombre": "NEGRIN", "valor": "21"}
+    ]
+    for g in gerencias:
+        procesar_gerencia(g['nombre'], g['valor'])
+
+if __name__ == "__main__":
+    main()
