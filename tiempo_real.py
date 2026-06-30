@@ -10,7 +10,7 @@ from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
-TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID_FISIO")  # Variable corregida
+TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID_FISIO")
 URL_WEB = "https://www3.gobiernodecanarias.org/sanidad/scs/ConsultaSIGLE/index.xhtml"
 SPREADSHEET_ID = "1nmfP4nXQ4Oydvic_rZ1K19zCQBinAicHG38MeKUO0MU"
 
@@ -67,7 +67,6 @@ def registrar_en_sheets(sheets_service, nombre_gerencia, tipo_lista, contrato, n
 
 def enviar_telegram(mensaje, thread_id):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    
     payload = {
         "chat_id": TELEGRAM_CHAT_ID, 
         "text": mensaje, 
@@ -85,7 +84,7 @@ def enviar_telegram(mensaje, thread_id):
         else:
             print(f"✅ Mensaje enviado correctamente al hilo {thread_id}")
     except Exception as e:
-        print(f"Error sending to Telegram: {e}")
+        print(f"Error enviando a Telegram: {e}")
 
 def extraer_view_state(html):
     soup = BeautifulSoup(html, "html.parser")
@@ -207,4 +206,35 @@ def procesar_gerencia(sheets_service, nombre, valor_gerencia, thread_id):
                 texto_linea = f"  • {celdas[0]} ➔ Gerencia: `{celdas[1]}` (*{nombre_persona}*) | Global: `{celdas[2]}`"
                 
                 if estado_ant and (info_linea not in estado_ant):
-                    texto_linea = f
+                    texto_linea = f"⚠️ {texto_linea}"
+                    tipo_lista = "Ordinaria" if idx < 3 else "Discapacidad"
+                    registrar_en_sheets(sheets_service, nombre, tipo_lista, celdas[0], celdas[1], celdas[2], fecha_sheets)
+                elif not estado_ant:
+                    tipo_lista = "Ordinaria" if idx < 3 else "Discapacidad"
+                    registrar_en_sheets(sheets_service, nombre, tipo_lista, celdas[0], celdas[1], celdas[2], fecha_sheets)
+                
+                if idx < 3: 
+                    lineas_ord.append(texto_linea)
+                else: 
+                    lineas_disc.append(texto_linea)
+
+            with open(fichero_estado, "w") as f: 
+                f.write(datos_actuales)
+            print(f"💾 Archivo {fichero_estado} actualizado localmente.")
+            
+            txt_ord = "\n".join(lineas_ord)
+            txt_disc = "\n".join(lineas_disc)
+            
+            msg = f"🔄 *SCS: {nombre}*\n📅 _Actualizado: {fecha_telegram}_\n🏥 *Fisioterapeuta*\n\n📋 *Ordinarios:*\n{txt_ord}\n\n👑 *Discapacidad:*\n{txt_disc}\n\n🔗 [Ver en la web]({URL_WEB})"
+            enviar_telegram(msg, thread_id)
+            
+    except Exception as e:
+        print(f"Error crítico procesando la gerencia {nombre}: {e}")
+
+def main():
+    sheets_service = obtener_servicio_sheets()
+    for g in GERENCIAS_TOTALES:
+        procesar_gerencia(sheets_service, g['nombre'], g['valor'], g['thread_id'])
+
+if __name__ == "__main__":
+    main()
