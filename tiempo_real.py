@@ -2,7 +2,7 @@ import os
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo  # Forzar zona horaria nativa de Canarias
+from zoneinfo import ZoneInfo
 import json
 import csv
 import pdfplumber
@@ -10,13 +10,10 @@ from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
-TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
+TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID_FISIO")  # Variable corregida
 URL_WEB = "https://www3.gobiernodecanarias.org/sanidad/scs/ConsultaSIGLE/index.xhtml"
-
-# ID de tu hoja de cálculo para el histórico estadístico
 SPREADSHEET_ID = "1nmfP4nXQ4Oydvic_rZ1K19zCQBinAicHG38MeKUO0MU"
 
-# Mapeo verificado con tus enlaces e hilos específicos del grupo de Fisioterapia
 GERENCIAS_TOTALES = [
     {"nombre": "Lanzarote", "valor": "22", "thread_id": 2},
     {"nombre": "Fuerteventura", "valor": "23", "thread_id": 3},
@@ -46,12 +43,10 @@ def obtener_servicio_sheets():
 def registrar_en_sheets(sheets_service, nombre_gerencia, tipo_lista, contrato, num_gerencia, num_global, fecha_actual):
     if not sheets_service:
         return
-    
     try:
         num_g = int(num_gerencia)
     except ValueError:
         num_g = num_gerencia
-        
     try:
         num_gl = int(num_global)
     except ValueError:
@@ -59,7 +54,6 @@ def registrar_en_sheets(sheets_service, nombre_gerencia, tipo_lista, contrato, n
 
     valores = [[fecha_actual, nombre_gerencia, tipo_lista, contrato, num_g, num_gl]]
     cuerpo = {"values": valores}
-    
     try:
         sheets_service.values().append(
             spreadsheetId=SPREADSHEET_ID,
@@ -73,19 +67,25 @@ def registrar_en_sheets(sheets_service, nombre_gerencia, tipo_lista, contrato, n
 
 def enviar_telegram(mensaje, thread_id):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+    
     payload = {
         "chat_id": TELEGRAM_CHAT_ID, 
         "text": mensaje, 
         "parse_mode": "Markdown", 
         "disable_web_page_preview": True,
-        "message_thread_id": thread_id
+        "message_thread_id": int(thread_id)
     }
+    
+    print(f"DEBUG Telegram Payload enviado: chat_id={TELEGRAM_CHAT_ID}, thread_id={thread_id}")
+    
     try:
         response = requests.post(url, json=payload, timeout=15)
         if response.status_code != 200:
             print(f"Error Telegram Fisio (Hilo {thread_id}): {response.text}")
+        else:
+            print(f"✅ Mensaje enviado correctamente al hilo {thread_id}")
     except Exception as e:
-        print(f"Error enviando a Telegram: {e}")
+        print(f"Error sending to Telegram: {e}")
 
 def extraer_view_state(html):
     soup = BeautifulSoup(html, "html.parser")
@@ -93,15 +93,13 @@ def extraer_view_state(html):
     return input_vs.get("value") if input_vs else None
 
 def actualizar_mapeo_pdf(session, valor_gerencia, vs_actual, csv_path):
-    """Descarga el PDF de aspirantes usando el ViewState activo de la sesión actual"""
     print(f"⌛ Descargando y procesando PDF de aspirantes para gerencia {valor_gerencia}...")
     url_cat = "https://www3.gobiernodecanarias.org/sanidad/scs/ConsultaSIGLE/categorias.xhtml"
     
-    # El payload exacto que emula el clic del botón de impresión de la tabla activa
     payload_pdf = {
         "j_idt13": "j_idt13",
-        "j_idt13:categoriasSOM_input": "97",  # Categoría Fisioterapeuta
-        "j_idt13:j_idt15": "j_idt13:j_idt15", # ID del botón de descarga PDF
+        "j_idt13:categoriasSOM_input": "97",
+        "j_idt13:j_idt15": "j_idt13:j_idt15",
         "javax.faces.ViewState": vs_actual
     }
     
@@ -139,13 +137,11 @@ def actualizar_mapeo_pdf(session, valor_gerencia, vs_actual, csv_path):
             
         print(f"✅ Archivo de caché creado con éxito: {len(mapeo)} nombres indexados.")
         return mapeo
-
     except Exception as e:
         print(f"Error crítico al procesar PDF de la gerencia {valor_gerencia}: {e}")
         return {}
 
 def cargar_mapeo_nombres(session, valor_gerencia, vs_final, csv_path):
-    """Comprueba si el caché local tiene menos de 7 días. Si no, lo fuerza de la sesión actual"""
     if os.path.exists(csv_path):
         mtime = datetime.fromtimestamp(os.path.getmtime(csv_path))
         if datetime.now() - mtime < timedelta(days=7):
@@ -156,28 +152,26 @@ def cargar_mapeo_nombres(session, valor_gerencia, vs_final, csv_path):
                     if len(fila) == 2:
                         mapeo[fila[0]] = fila[1]
             return mapeo
-
-    # Si expiró o no existe, descarga usando la sesión abierta de este ciclo
     return actualizar_mapeo_pdf(session, valor_gerencia, vs_final, csv_path)
 
-def procesar_gerencia(session, sheets_service, nombre, valor_gerencia, thread_id):
+def procesar_gerencia(sheets_service, nombre, valor_gerencia, thread_id):
     url_base = "https://www3.gobiernodecanarias.org/sanidad/scs/ConsultaSIGLE/index.xhtml"
     url_cat = "https://www3.gobiernodecanarias.org/sanidad/scs/ConsultaSIGLE/categorias.xhtml"
     
     fichero_estado = f"estado_{valor_gerencia}.txt"
     csv_path = f"mapeo_fisio_{valor_gerencia}.csv"
 
+    session = requests.Session()
+    session.headers.update({"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
+
     try:
-        # Paso 1: Inicializar el home para obtener el ViewState base
         r_home = session.get(url_base, timeout=15)
         vs_1 = extraer_view_state(r_home.text)
         
-        # Paso 2: Seleccionar Gerencia
         payload_g = {"j_idt43": "j_idt43", "j_idt43:gerenciaUNSOM_input": valor_gerencia, "j_idt43:j_idt46": "Seleccionar", "javax.faces.ViewState": vs_1}
         r_cat = session.post(url_base, data=payload_g, timeout=15)
         vs_2 = extraer_view_state(r_cat.text)
         
-        # Paso 3: Seleccionar Categoría (Fisioterapeuta) -> Carga la tabla de datos en pantalla
         payload_c = {"j_idt13": "j_idt13", "j_idt13:categoriasSOM_input": "97", "j_idt13:j_idt16": "Seleccionar", "javax.faces.ViewState": vs_2}
         r_final = session.post(url_cat, data=payload_c, timeout=15)
         vs_final = extraer_view_state(r_final.text)
@@ -203,7 +197,6 @@ def procesar_gerencia(session, sheets_service, nombre, valor_gerencia, thread_id
             fecha_sheets = ahora.strftime("%Y-%m-%d %H:%M:%S")
             fecha_telegram = ahora.strftime("%d/%m/%Y - %H:%M")
 
-            # Intentar resolver los nombres usando la sesión abierta y el ViewState de la tabla actual
             mapa_nombres = cargar_mapeo_nombres(session, valor_gerencia, vs_final, csv_path)
 
             for idx, fila in enumerate(filas):
@@ -214,37 +207,4 @@ def procesar_gerencia(session, sheets_service, nombre, valor_gerencia, thread_id
                 texto_linea = f"  • {celdas[0]} ➔ Gerencia: `{celdas[1]}` (*{nombre_persona}*) | Global: `{celdas[2]}`"
                 
                 if estado_ant and (info_linea not in estado_ant):
-                    texto_linea = f"⚠️ {texto_linea}"
-                    tipo_lista = "Ordinaria" if idx < 3 else "Discapacidad"
-                    registrar_en_sheets(sheets_service, nombre, tipo_lista, celdas[0], celdas[1], celdas[2], fecha_sheets)
-                elif not estado_ant:
-                    tipo_lista = "Ordinaria" if idx < 3 else "Discapacidad"
-                    registrar_en_sheets(sheets_service, nombre, tipo_lista, celdas[0], celdas[1], celdas[2], fecha_sheets)
-                
-                if idx < 3: 
-                    lineas_ord.append(texto_linea)
-                else: 
-                    lineas_disc.append(texto_linea)
-
-            with open(fichero_estado, "w") as f: 
-                f.write(datos_actuales)
-            
-            txt_ord = "\n".join(lineas_ord)
-            txt_disc = "\n".join(lineas_disc)
-            
-            msg = f"🔄 *SCS: {nombre}*\n📅 _Actualizado: {fecha_telegram}_\n🏥 *Fisioterapeuta*\n\n📋 *Ordinarios:*\n{txt_ord}\n\n👑 *Discapacidad:*\n{txt_disc}\n\n🔗 [Ver en la web]({URL_WEB})"
-            enviar_telegram(msg, thread_id)
-            
-    except Exception as e:
-        print(f"Error en {nombre}: {e}")
-
-def main():
-    # Creamos una sesión limpia por ciclo para no cruzar estados de cookies corruptas de JSF
-    session = requests.Session()
-    session.headers.update({"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
-    sheets_service = obtener_servicio_sheets()
-    for g in GERENCIAS_TOTALES:
-        procesar_gerencia(session, sheets_service, g['nombre'], g['valor'], g['thread_id'])
-
-if __name__ == "__main__":
-    main()
+                    texto_linea = f
