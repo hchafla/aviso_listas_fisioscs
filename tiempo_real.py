@@ -44,6 +44,7 @@ def extraer_view_state(html):
     return input_vs.get("value") if input_vs else None
 
 def actualizar_mapeo_pdf(session, valor_gerencia, csv_path):
+    print(f"⌛ Descargando nuevo PDF para {valor_gerencia}...")
     r_cat = session.get(URL_CAT)
     vs_final = extraer_view_state(r_cat.text)
     payload_pdf = {"j_idt13": "j_idt13", "j_idt13:j_idt15": "j_idt13:j_idt15", "javax.faces.ViewState": vs_final}
@@ -58,11 +59,12 @@ def actualizar_mapeo_pdf(session, valor_gerencia, csv_path):
                 tabla = pagina.extract_table()
                 if tabla:
                     for fila in tabla:
-                        if fila and len(fila) >= 3 and str(fila[0]).isdigit():
+                        if fila and len(fila) >= 3 and str(fila[0]).strip().isdigit():
                             mapeo[str(fila[0]).strip()] = str(fila[2]).strip()
-        with open(csv_path, "w", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f)
-            for k, v in mapeo.items(): writer.writerow([k, v])
+        if mapeo:
+            with open(csv_path, "w", newline="", encoding="utf-8") as f:
+                writer = csv.writer(f)
+                for k, v in mapeo.items(): writer.writerow([k, v])
         if os.path.exists(pdf_temp): os.remove(pdf_temp)
     return mapeo
 
@@ -84,40 +86,41 @@ def procesar_gerencia(sheets_service, nombre, valor_gerencia, thread_id):
     session = requests.Session()
     session.headers.update({"User-Agent": "Mozilla/5.0"})
     
-    # Navegación forzada
-    vs_1 = extraer_view_state(session.get(URL_BASE).text)
-    session.post(URL_BASE, data={"j_idt43": "j_idt43", "j_idt43:gerenciaUNSOM_input": valor_gerencia, "j_idt43:j_idt46": "Seleccionar", "javax.faces.ViewState": vs_1})
-    
-    vs_2 = extraer_view_state(session.get(URL_CAT).text)
-    r_final = session.post(URL_CAT, data={"j_idt13": "j_idt13", "j_idt13:categoriasSOM_input": "97", "j_idt13:j_idt16": "Seleccionar", "javax.faces.ViewState": vs_2})
-    
-    # Detección
-    soup = BeautifulSoup(r_final.text, "html.parser")
-    filas = [f for f in soup.find_all("tr") if len(f.find_all("td")) >= 3 and any(kw in f.get_text() for kw in ["Corta", "Larga", "Interinidad"])]
-    
-    # Mapeo nombres
-    mapa_nombres = cargar_mapeo_nombres(session, valor_gerencia, f"mapeo_fisio_{valor_gerencia}.csv")
-    
-    # Lógica de comparación y envío (omito el registro en Sheets aquí por brevedad, insértalo igual que lo tenías)
-    datos_actuales = "".join([f"{f.find_all('td')[0].get_text(strip=True)}:{f.find_all('td')[1].get_text(strip=True)}-{f.find_all('td')[2].get_text(strip=True)}" for f in filas])
-    fichero_estado = f"estado_{valor_gerencia}.txt"
-    
-    estado_ant = ""
-    if os.path.exists(fichero_estado):
-        with open(fichero_estado, "r") as f: estado_ant = f.read().strip()
+    try:
+        vs_1 = extraer_view_state(session.get(URL_BASE).text)
+        session.post(URL_BASE, data={"j_idt43": "j_idt43", "j_idt43:gerenciaUNSOM_input": valor_gerencia, "j_idt43:j_idt46": "Seleccionar", "javax.faces.ViewState": vs_1})
         
-    if datos_actuales != estado_ant:
-        lineas_ord, lineas_disc = [], []
-        for idx, fila in enumerate(filas):
-            c = [td.get_text(strip=True) for td in fila.find_all("td")]
-            nombre_p = mapa_nombres.get(c[1], "Nombre no disponible")
-            texto = f"  • {c[0]} ➔ Gerencia: `{c[1]}` (*{nombre_p}*) | Global: `{c[2]}`"
-            if idx < 3: lineas_ord.append(texto)
-            else: lineas_disc.append(texto)
+        vs_2 = extraer_view_state(session.get(URL_CAT).text)
+        r_final = session.post(URL_CAT, data={"j_idt13": "j_idt13", "j_idt13:categoriasSOM_input": "97", "j_idt13:j_idt16": "Seleccionar", "javax.faces.ViewState": vs_2})
+        
+        soup = BeautifulSoup(r_final.text, "html.parser")
+        filas = [f for f in soup.find_all("tr") if len(f.find_all("td")) >= 3 and any(kw in f.get_text() for kw in ["Corta", "Larga", "Interinidad"])]
+        
+        if not filas: return 
+
+        datos_actuales = "".join([f"{f.find_all('td')[0].get_text(strip=True)}:{f.find_all('td')[1].get_text(strip=True)}-{f.find_all('td')[2].get_text(strip=True)}" for f in filas])
+        fichero_estado = f"estado_{valor_gerencia}.txt"
+        
+        estado_ant = ""
+        if os.path.exists(fichero_estado):
+            with open(fichero_estado, "r") as f: estado_ant = f.read().strip()
+        
+        if datos_actuales != estado_ant and estado_ant != "":
+            mapa_nombres = cargar_mapeo_nombres(session, valor_gerencia, f"mapeo_fisio_{valor_gerencia}.csv")
+            lineas_ord, lineas_disc = [], []
+            for idx, fila in enumerate(filas):
+                c = [td.get_text(strip=True) for td in fila.find_all("td")]
+                nombre_p = mapa_nombres.get(c[1], "Nombre no disponible")
+                texto = f"  • {c[0]} ➔ Gerencia: `{c[1]}` (*{nombre_p}*) | Global: `{c[2]}`"
+                if idx < 3: lineas_ord.append(texto)
+                else: lineas_disc.append(texto)
             
-        msg = f"🔄 *SCS: {nombre}*\n\n📋 *Ordinarios:*\n" + "\n".join(lineas_ord) + "\n\n👑 *Discapacidad:*\n" + "\n".join(lineas_disc)
-        enviar_telegram(msg, thread_id)
-        with open(fichero_estado, "w") as f: f.write(datos_actuales)
+            msg = f"🔄 *SCS: {nombre}*\n\n📋 *Ordinarios:*\n" + "\n".join(lineas_ord) + "\n\n👑 *Discapacidad:*\n" + "\n".join(lineas_disc)
+            enviar_telegram(msg, thread_id)
+            with open(fichero_estado, "w") as f: f.write(datos_actuales)
+        elif estado_ant == "":
+            with open(fichero_estado, "w") as f: f.write(datos_actuales)
+    except Exception as e: print(f"Error en {nombre}: {e}")
 
 def main():
     service = obtener_servicio_sheets()
