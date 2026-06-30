@@ -1,8 +1,8 @@
 name: Monitor SCS
 on:
-  schedule:
-    - cron: '*/15 8-15 * * 1-5'
   workflow_dispatch:
+  repository_dispatch:
+    types: [ejecutar-monitor]
 
 jobs:
   check-scs:
@@ -26,6 +26,8 @@ jobs:
           TZ: Atlantic/Canary
         run: python tiempo_real.py
         
+      # Esta parte se mantiene si decides seguir usando .txt, 
+      # pero se recomienda migrar a Google Sheets como base de datos.
       - name: Guardar estado
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
