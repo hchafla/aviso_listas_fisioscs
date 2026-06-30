@@ -1,5 +1,4 @@
 name: Monitor SCS Fisio
-
 on:
   schedule:
     - cron: '*/15 * * * *'
@@ -9,53 +8,24 @@ jobs:
   monitor:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Necesario para hacer el git push
-    
+      contents: write
     steps:
-      - name: Checkout del repositorio
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: true
-
-      - name: Configurar Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
-      - name: Instalar dependencias
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.10'}
+      - run: pip install requests beautifulsoup4 pdfplumber
+      - run: python tiempo_real.py
+      
+      - name: Commit y Push
         run: |
-          python -m pip install --upgrade pip
-          pip install requests beautifulsoup4 google-api-python-client google-auth pdfplumber
-
-      # Mantiene los archivos CSV y TXT de una ejecución a otra
-      # Esto permite que el script detecte que el CSV es reciente y no descargue el PDF
-      - name: Cache de estados y mapas
-        uses: actions/cache@v4
-        with:
-          path: |
-            estado_*.txt
-            mapeo_fisio_*.csv
-          key: ${{ runner.os }}-monitor-data
-
-      - name: Ejecutar Monitor de Fisioterapia
-        env:
-          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
-          TELEGRAM_CHAT_ID_FISIO: ${{ secrets.TELEGRAM_CHAT_ID_FISIO }}
-          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
-        run: python tiempo_real.py
-
-      - name: Guardar estados y mapas en el repositorio
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          
-          # Añadimos archivos, el || true evita error si no existen archivos
-          git add estado_*.txt mapeo_fisio_*.csv || true
-          
-          # Solo commit si hay cambios reales
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Git status ayuda a ver si el archivo cambió realmente
+          git status
+          git add estado_*.txt mapeo_fisio_*.csv
           if ! git diff --cached --quiet; then
-            git commit -m "🔄 Actualizar estados y mapas [Skip CI]"
-            git push
+            git commit -m "🔄 Update data [Skip CI]"
+            git push origin main
           else
-            echo "Sin cambios para respaldar."
+            echo "Sin cambios"
           fi
