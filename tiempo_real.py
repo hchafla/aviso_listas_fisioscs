@@ -1,6 +1,10 @@
-import os
 import requests
 from bs4 import BeautifulSoup
+import warnings
+from bs4 import XMLParsedAsHTMLWarning
+
+# Ignorar aviso de parser
+warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 
 URL_BASE = "https://www3.gobiernodecanarias.org/sanidad/scs/ConsultaSIGLE/index.xhtml"
 URL_CAT = "https://www3.gobiernodecanarias.org/sanidad/scs/ConsultaSIGLE/categorias.xhtml"
@@ -16,11 +20,11 @@ def procesar_gerencia(nombre, valor_gerencia):
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     })
 
-    # 1. Cargar Home para obtener sesión y primer ViewState
+    # 1. Cargar Home
     r_home = session.get(URL_BASE)
     vs_1 = extraer_view_state(r_home.text)
     
-    # 2. POST para seleccionar Gerencia
+    # 2. Seleccionar Gerencia
     payload_g = {
         "j_idt43": "j_idt43", 
         "j_idt43:gerenciaUNSOM_input": valor_gerencia, 
@@ -29,11 +33,11 @@ def procesar_gerencia(nombre, valor_gerencia):
     }
     session.post(URL_BASE, data=payload_g)
     
-    # 3. Obtener ViewState tras la selección de gerencia
+    # 3. Obtener ViewState de la página de categorías
     r_cat_init = session.get(URL_CAT)
     vs_2 = extraer_view_state(r_cat_init.text)
     
-    # 4. POST para seleccionar Categoría (Fisioterapeuta = 97)
+    # 4. POST AJAX para seleccionar Categoría
     payload_c = {
         "j_idt13": "j_idt13", 
         "j_idt13:categoriasSOM_input": "97", 
@@ -53,12 +57,16 @@ def procesar_gerencia(nombre, valor_gerencia):
     
     r_final = session.post(URL_CAT, data=payload_c, headers=headers_ajax)
     
-    # Validación del resultado
-    soup = BeautifulSoup(r_final.text, "html.parser")
-    if soup.find("form", id="j_idt13"):
-        print(f"✅ ÉXITO: Formulario j_idt13 encontrado para {nombre}.")
+    # --- DEPURACIÓN A TIRO HECHO ---
+    if "<partial-response" in r_final.text:
+        print(f"✅ Respuesta AJAX recibida para {nombre}.")
+        if 'id="j_idt13"' in r_final.text:
+            print(f"✅ ÉXITO: El formulario j_idt13 está dentro del XML.")
+        else:
+            print(f"❌ ERROR: El formulario no aparece en el XML de respuesta.")
+            print(f"DEBUG XML (primeros 500 chars): {r_final.text[:500]}")
     else:
-        print(f"❌ ERROR: Formulario no encontrado en {nombre}.")
+        print(f"❌ ERROR: No es una respuesta XML. Servidor respondió: {r_final.text[:200]}")
 
 def main():
     gerencias = [
