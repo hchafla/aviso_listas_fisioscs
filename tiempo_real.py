@@ -25,9 +25,9 @@ GERENCIAS_TOTALES = [
     {"nombre": "La Palma", "valor": "26", "thread_id": 6},
     {"nombre": "La Gomera", "valor": "27", "thread_id": 7},
     {"nombre": "El Hierro", "valor": "28", "thread_id": 8},
-    {"nombre": "Atención Primaria Tenerife", "valor": "30", "thread_id": 9},
-    {"nombre": "Atención Primaria Gran Canaria", "valor": "20", "thread_id": 10},
-    {"nombre": "Dr. Negrín", "valor": "21", "thread_id": 12}
+    {"nombre": "GAPTF", "valor": "30", "thread_id": 9},
+    {"nombre": "GAPGC", "valor": "20", "thread_id": 10},
+    {"nombre": "NEGRIN", "valor": "21", "thread_id": 12}
 ]
 
 def obtener_servicio_sheets():
@@ -98,7 +98,7 @@ def actualizar_mapeo_pdf(session, valor_gerencia, vs_actual, csv_path):
     url_cat = "https://www3.gobiernodecanarias.org/sanidad/scs/ConsultaSIGLE/categorias.xhtml"
     payload_pdf = {
         "j_idt13": "j_idt13",
-        "j_idt13:categoriasSOM_input": "97",  # ID de Fisio verificado en tu código
+        "j_idt13:categoriasSOM_input": "97",  # ID de Fisio
         "j_idt13:j_idt15": "j_idt13:j_idt15",
         "javax.faces.ViewState": vs_actual
     }
@@ -197,7 +197,6 @@ def procesar_gerencia(session, sheets_service, nombre, valor_gerencia, thread_id
             datos_actuales += info_linea + "|"
 
         if datos_actuales != estado_ant:
-            # Corrección de zona horaria estricta de Canarias
             ahora = datetime.now(ZoneInfo("Atlantic/Canary"))
             fecha_sheets = ahora.strftime("%Y-%m-%d %H:%M:%S")
             fecha_telegram = ahora.strftime("%d/%m/%Y - %H:%M")
@@ -232,7 +231,7 @@ def procesar_gerencia(session, sheets_service, nombre, valor_gerencia, thread_id
             txt_ord = "\n".join(lineas_ord)
             txt_disc = "\n".join(lineas_disc)
             
-            msg = f"🔄 *SCS: {nombre}*\n📅 _Actualizado: {fecha_telegram}_\n🏥 *Fisioterapeuta*\n\n📋 *Ordinarios:*\n{txt_ord}\n\n♿ *Discapacidad:*\n{txt_disc}\n\n🔗 [Ver en la web]({URL_WEB})"
+            msg = f"🔄 *SCS: {nombre}*\n📅 _Actualizado: {fecha_telegram}_\n🏥 *Fisioterapeuta*\n\n📋 *Ordinarios:*\n{txt_ord}\n\n👑 *Discapacidad:*\n{txt_disc}\n\n🔗 [Ver en la web]({URL_WEB})"
             enviar_telegram(msg, thread_id)
             
     except Exception as e:
