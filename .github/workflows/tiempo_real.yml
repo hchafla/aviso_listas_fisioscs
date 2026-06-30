@@ -1,44 +1,40 @@
-name: Monitor SCS
-on:
-  schedule:
-    - cron: '*/15 * * * *'
-  workflow_dispatch:
+name: Monitor SCS Fisio
 
-permissions:
-  contents: write
+on:
+  workflow_dispatch: 
 
 jobs:
-  monitor:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout del repositorio
-        uses: actions/checkout@v4
+    - name: Checkout del repositorio
+      uses: actions/checkout@v4
+      with:
+        persist-credentials: true
 
-      - name: Configurar Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
+    - name: Configurar Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
 
-      - name: Instalar dependencias
-        run: |
-          pip install --upgrade pip
-          pip install requests beautifulsoup4 pdfplumber google-api-python-client google-auth
+    - name: Instalar dependencias
+      run: |
+        python -m pip install --upgrade pip
+        pip install requests beautifulsoup4 google-api-python-client google-auth
 
-      - name: Ejecutar Monitor
-        env:
-          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
-          TELEGRAM_CHAT_ID_FISIO: ${{ secrets.TELEGRAM_CHAT_ID_FISIO }}
-          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
-        run: python tiempo_real.py
+    - name: Ejecutar Monitor de Fisioterapia
+      env:
+        TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+        TELEGRAM_CHAT_ID_FISIO: ${{ secrets.TELEGRAM_CHAT_ID_FISIO }}
+        GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+      run: python tiempo_real.py
 
-      - name: Commit y Push
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add *.txt *.csv
-          if ! git diff --cached --quiet; then
-            git commit -m "🔄 Actualización automática de datos"
-            git push
-          else
-            echo "Sin cambios detectados"
-          fi
+    - name: Guardar estados
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git add estado_*.txt || true
+        if ! git diff --cached --quiet; then
+          git commit -m "🔄 Actualizar estados [Skip CI]"
+          git push
+        fi
