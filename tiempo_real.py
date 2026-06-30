@@ -93,13 +93,15 @@ def extraer_view_state(html):
     return input_vs.get("value") if input_vs else None
 
 def actualizar_mapeo_pdf(session, valor_gerencia, vs_actual, csv_path):
-    """Simula la petición de descarga del PDF de aspirantes y genera el mapa local"""
+    """Descarga el PDF de aspirantes usando el ViewState activo de la sesión actual"""
     print(f"⌛ Descargando y procesando PDF de aspirantes para gerencia {valor_gerencia}...")
     url_cat = "https://www3.gobiernodecanarias.org/sanidad/scs/ConsultaSIGLE/categorias.xhtml"
+    
+    # El payload exacto que emula el clic del botón de impresión de la tabla activa
     payload_pdf = {
         "j_idt13": "j_idt13",
-        "j_idt13:categoriasSOM_input": "97",  # ID de Fisio
-        "j_idt13:j_idt15": "j_idt13:j_idt15",
+        "j_idt13:categoriasSOM_input": "97",  # Categoría Fisioterapeuta
+        "j_idt13:j_idt15": "j_idt13:j_idt15", # ID del botón de descarga PDF
         "javax.faces.ViewState": vs_actual
     }
     
@@ -135,47 +137,47 @@ def actualizar_mapeo_pdf(session, valor_gerencia, vs_actual, csv_path):
         if os.path.exists(pdf_temp):
             os.remove(pdf_temp)
             
-        print(f"✅ Archivo de caché creado: {len(mapeo)} nombres indexados.")
+        print(f"✅ Archivo de caché creado con éxito: {len(mapeo)} nombres indexados.")
         return mapeo
 
     except Exception as e:
         print(f"Error crítico al procesar PDF de la gerencia {valor_gerencia}: {e}")
         return {}
 
-def cargar_mapeo_nombres(session, valor_gerencia, vs_actual):
-    """Carga los nombres del CSV local o descarga el PDF si expiró (7 días)"""
-    csv_path = f"mapeo_fisio_{valor_gerencia}.csv"
-    forzar_descarga = True
-
+def cargar_mapeo_nombres(session, valor_gerencia, vs_final, csv_path):
+    """Comprueba si el caché local tiene menos de 7 días. Si no, lo fuerza de la sesión actual"""
     if os.path.exists(csv_path):
         mtime = datetime.fromtimestamp(os.path.getmtime(csv_path))
-        # Si tiene menos de 7 días, usamos el archivo local sin descargar nada de la web
         if datetime.now() - mtime < timedelta(days=7):
-            forzar_descarga = False
+            mapeo = {}
+            with open(csv_path, "r", encoding="utf-8") as f:
+                reader = csv.reader(f)
+                for fila in reader:
+                    if len(fila) == 2:
+                        mapeo[fila[0]] = fila[1]
+            return mapeo
 
-    if forzar_descarga:
-        return actualizar_mapeo_pdf(session, valor_gerencia, vs_actual, csv_path)
-    
-    mapeo = {}
-    with open(csv_path, "r", encoding="utf-8") as f:
-        reader = csv.reader(f)
-        for fila in reader:
-            if len(fila) == 2:
-                mapeo[fila[0]] = fila[1]
-    return mapeo
+    # Si expiró o no existe, descarga usando la sesión abierta de este ciclo
+    return actualizar_mapeo_pdf(session, valor_gerencia, vs_final, csv_path)
 
 def procesar_gerencia(session, sheets_service, nombre, valor_gerencia, thread_id):
     url_base = "https://www3.gobiernodecanarias.org/sanidad/scs/ConsultaSIGLE/index.xhtml"
     url_cat = "https://www3.gobiernodecanarias.org/sanidad/scs/ConsultaSIGLE/categorias.xhtml"
     
     fichero_estado = f"estado_{valor_gerencia}.txt"
+    csv_path = f"mapeo_fisio_{valor_gerencia}.csv"
 
     try:
+        # Paso 1: Inicializar el home para obtener el ViewState base
         r_home = session.get(url_base, timeout=15)
         vs_1 = extraer_view_state(r_home.text)
+        
+        # Paso 2: Seleccionar Gerencia
         payload_g = {"j_idt43": "j_idt43", "j_idt43:gerenciaUNSOM_input": valor_gerencia, "j_idt43:j_idt46": "Seleccionar", "javax.faces.ViewState": vs_1}
         r_cat = session.post(url_base, data=payload_g, timeout=15)
         vs_2 = extraer_view_state(r_cat.text)
+        
+        # Paso 3: Seleccionar Categoría (Fisioterapeuta) -> Carga la tabla de datos en pantalla
         payload_c = {"j_idt13": "j_idt13", "j_idt13:categoriasSOM_input": "97", "j_idt13:j_idt16": "Seleccionar", "javax.faces.ViewState": vs_2}
         r_final = session.post(url_cat, data=payload_c, timeout=15)
         vs_final = extraer_view_state(r_final.text)
@@ -201,14 +203,13 @@ def procesar_gerencia(session, sheets_service, nombre, valor_gerencia, thread_id
             fecha_sheets = ahora.strftime("%Y-%m-%d %H:%M:%S")
             fecha_telegram = ahora.strftime("%d/%m/%Y - %H:%M")
 
-            # Cargar mapa de nombres correspondiente a esta gerencia específica
-            mapa_nombres = cargar_mapeo_nombres(session, valor_gerencia, vs_final)
+            # Intentar resolver los nombres usando la sesión abierta y el ViewState de la tabla actual
+            mapa_nombres = cargar_mapeo_nombres(session, valor_gerencia, vs_final, csv_path)
 
             for idx, fila in enumerate(filas):
                 celdas = [c.get_text(strip=True) for c in fila.find_all("td")]
                 info_linea = f"{celdas[0]}:{celdas[1]}-{celdas[2]}"
                 
-                # Buscamos el nombre del afectado usando el número de corte de gerencia (celdas[1])
                 nombre_persona = mapa_nombres.get(celdas[1], "Nombre no disponible")
                 texto_linea = f"  • {celdas[0]} ➔ Gerencia: `{celdas[1]}` (*{nombre_persona}*) | Global: `{celdas[2]}`"
                 
@@ -238,6 +239,7 @@ def procesar_gerencia(session, sheets_service, nombre, valor_gerencia, thread_id
         print(f"Error en {nombre}: {e}")
 
 def main():
+    # Creamos una sesión limpia por ciclo para no cruzar estados de cookies corruptas de JSF
     session = requests.Session()
     session.headers.update({"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
     sheets_service = obtener_servicio_sheets()
