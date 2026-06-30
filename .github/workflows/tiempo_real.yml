@@ -36,7 +36,7 @@ jobs:
         TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
         TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
-      run: python tiempo_real_fisio.py
+      run: python tiempo_real.py
 
     # 5. Guardar los estados (.txt) y los mapas de nombres (.csv) generados
     - name: Guardar estados y mapas en el repositorio
