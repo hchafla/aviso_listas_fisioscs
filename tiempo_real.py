@@ -79,8 +79,6 @@ def enviar_telegram(mensaje, thread_id):
         "message_thread_id": int(thread_id)
     }
     
-    print(f"DEBUG Telegram Payload enviado: chat_id={TELEGRAM_CHAT_ID}, thread_id={thread_id}")
-    
     try:
         response = requests.post(url, json=payload, timeout=15)
         if response.status_code != 200:
@@ -108,24 +106,20 @@ def actualizar_mapeo_pdf(session, valor_gerencia, html_pagina, csv_path):
             with open(csv_path, "w", encoding="utf-8") as f: pass
         return {}
 
-    # Mapeo dinámico y exacto de todo el estado del formulario actualizado
     payload_pdf = {}
     for input_tag in form.find_all(["input", "select"]):
         name = input_tag.get("name")
         if not name:
             continue
         value = input_tag.get("value", "")
-        # Asegurar que el selector mantenga la categoría de Fisioterapeuta
         if "categoriasSOM_input" in name:
             payload_pdf[name] = "97"
         else:
             payload_pdf[name] = value
 
-    # Forzar la activación síncrona del botón de impresión y el identificador del formulario
     payload_pdf["j_idt13"] = "j_idt13"
     payload_pdf["j_idt13:j_idt15"] = "j_idt13:j_idt15"
     
-    # Cabeceras limpias estándar (sin simulación AJAX que corrompa la respuesta del flujo binario)
     headers_standard = {
         "Origin": "https://www3.gobiernodecanarias.org",
         "Referer": url_cat,
@@ -136,13 +130,12 @@ def actualizar_mapeo_pdf(session, valor_gerencia, html_pagina, csv_path):
         r_pdf = session.post(url_cat, data=payload_pdf, headers=headers_standard, timeout=45)
         content = r_pdf.content
        
-        # === INICIO DE BLOQUE DE DEPURACIÓN ===
+        # === BLOQUE DE DEPURACIÓN CRUCIAL ===
         print(f"\n--- [DEBUG GERENCIA {valor_gerencia}] ---")
         print(f"DEBUG STATUS CODE: {r_pdf.status_code}")
-        print(f"DEBUG HEADERS: {dict(r_pdf.headers)}")
-        print(f"DEBUG CONTENT START (Primeros 200 bytes): {content[:200]}")
+        print(f"DEBUG CONTENT TYPE: {r_pdf.headers.get('Content-Type', 'No especificado')}")
+        print(f"DEBUG CONTENT START (200b): {content[:200]}")
         print("-----------------------------------------\n")
-        # === FIN DE BLOQUE DE DEPURACIÓN ===
 
         if r_pdf.status_code != 200 or b"%PDF" not in content[:20]:
             print(f"❌ El servidor no devolvió un flujo binario PDF válido para la gerencia {valor_gerencia}")
@@ -185,16 +178,7 @@ def actualizar_mapeo_pdf(session, valor_gerencia, html_pagina, csv_path):
         return {}
 
 def cargar_mapeo_nombres(session, valor_gerencia, html_pagina, csv_path):
-    if os.path.exists(csv_path) and os.path.getsize(csv_path) > 0:
-        mtime = datetime.fromtimestamp(os.path.getmtime(csv_path))
-        if datetime.now() - mtime < timedelta(days=7):
-            mapeo = {}
-            with open(csv_path, "r", encoding="utf-8") as f:
-                reader = csv.reader(f)
-                for fila in reader:
-                    if len(fila) == 2:
-                        mapeo[fila[0]] = fila[1]
-            return mapeo
+    # Omitimos la comprobación temporal de la fecha del archivo para forzar la depuración real del post
     return actualizar_mapeo_pdf(session, valor_gerencia, html_pagina, csv_path)
 
 def procesar_gerencia(sheets_service, nombre, valor_gerencia, thread_id):
@@ -205,7 +189,7 @@ def procesar_gerencia(sheets_service, nombre, valor_gerencia, thread_id):
     csv_path = f"mapeo_fisio_{valor_gerencia}.csv"
 
     session = requests.Session()
-    session.headers.update({"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"})
+    session.headers.update({"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0"})
 
     try:
         r_home = session.get(url_base, timeout=15)
@@ -234,20 +218,21 @@ def procesar_gerencia(sheets_service, nombre, valor_gerencia, thread_id):
             info_linea = f"{celdas[0]}:{celdas[1]}-{celdas[2]}"
             datos_actuales += info_linea + "|"
 
-        if datos_actuales != estado_ant:
-            ahora = datetime.now(ZoneInfo("Atlantic/Canary"))
-            fecha_sheets = ahora.strftime("%Y-%m-%d %H:%M:%S")
-            fecha_telegram = ahora.strftime("%d/%m/%Y - %H:%M")
+        # --- FLUJO DE OBTENCIÓN EJECUTADO SIEMPRE PARA CONTROL DE CACHÉ ---
+        ahora = datetime.now(ZoneInfo("Atlantic/Canary"))
+        fecha_sheets = ahora.strftime("%Y-%m-%d %H:%M:%S")
+        fecha_telegram = ahora.strftime("%d/%m/%Y - %H:%M")
 
-            mapa_nombres = cargar_mapeo_nombres(session, valor_gerencia, r_final.text, csv_path)
+        mapa_nombres = cargar_mapeo_nombres(session, valor_gerencia, r_final.text, csv_path)
 
-            for idx, fila in enumerate(filas):
-                celdas = [c.get_text(strip=True) for c in fila.find_all("td")]
-                info_linea = f"{celdas[0]}:{celdas[1]}-{celdas[2]}"
-                
-                nombre_persona = mapa_nombres.get(celdas[1], "Nombre no disponible")
-                texto_linea = f"  • {celdas[0]} ➔ Gerencia: `{celdas[1]}` (*{nombre_persona}*) | Global: `{celdas[2]}`"
-                
+        for idx, fila in enumerate(filas):
+            celdas = [c.get_text(strip=True) for c in fila.find_all("td")]
+            info_linea = f"{celdas[0]}:{celdas[1]}-{celdas[2]}"
+            
+            nombre_persona = mapa_nombres.get(celdas[1], "Nombre no disponible")
+            texto_linea = f"  • {celdas[0]} ➔ Gerencia: `{celdas[1]}` (*{nombre_persona}*) | Global: `{celdas[2]}`"
+            
+            if datos_actuales != estado_ant:
                 if estado_ant and (info_linea not in estado_ant):
                     texto_linea = f"⚠️ {texto_linea}"
                     tipo_lista = "Ordinaria" if idx < 3 else "Discapacidad"
@@ -255,12 +240,14 @@ def procesar_gerencia(sheets_service, nombre, valor_gerencia, thread_id):
                 elif not estado_ant:
                     tipo_lista = "Ordinaria" if idx < 3 else "Discapacidad"
                     registrar_en_sheets(sheets_service, nombre, tipo_lista, celdas[0], celdas[1], celdas[2], fecha_sheets)
-                
-                if idx < 3: 
-                    lineas_ord.append(texto_linea)
-                else: 
-                    lineas_disc.append(texto_linea)
+            
+            if idx < 3: 
+                lineas_ord.append(texto_linea)
+            else: 
+                lineas_disc.append(texto_linea)
 
+        # Solo enviamos Telegram e histórico si hay cambios sustanciales detectados
+        if datos_actuales != estado_ant:
             with open(fichero_estado, "w") as f: 
                 f.write(datos_actuales)
             print(f"💾 Archivo {fichero_estado} actualizado localmente.")
