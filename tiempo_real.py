@@ -66,6 +66,10 @@ def registrar_en_sheets(sheets_service, nombre_gerencia, tipo_lista, contrato, n
         print(f"Error al escribir en Google Sheets: {e}")
 
 def enviar_telegram(mensaje, thread_id):
+    if not TELEGRAM_CHAT_ID:
+        print(f"❌ Error crítico: TELEGRAM_CHAT_ID_FISIO es None. Revisa el entorno de tu Workflow en GitHub.")
+        return
+
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     payload = {
         "chat_id": TELEGRAM_CHAT_ID, 
@@ -95,22 +99,50 @@ def actualizar_mapeo_pdf(session, valor_gerencia, vs_actual, csv_path):
     print(f"⌛ Descargando y procesando PDF de aspirantes para gerencia {valor_gerencia}...")
     url_cat = "https://www3.gobiernodecanarias.org/sanidad/scs/ConsultaSIGLE/categorias.xhtml"
     
+    # Payload emulado completo simulando la acción nativa de JSF/PrimeFaces para el botón Imprimir
     payload_pdf = {
+        "javax.faces.partial.ajax": "true",
+        "javax.faces.source": "j_idt13:j_idt15",
+        "javax.faces.partial.execute": "@all",
+        "j_idt13:j_idt15": "j_idt13:j_idt15",
         "j_idt13": "j_idt13",
         "j_idt13:categoriasSOM_input": "97",
-        "j_idt13:j_idt15": "j_idt13:j_idt15",
         "javax.faces.ViewState": vs_actual
     }
     
+    # Cabeceras específicas requeridas por el framework JavaServer Faces para descargas síncronas
+    headers_ajax = {
+        "Faces-Request": "partial/ajax",
+        "Origin": "https://www3.gobiernodecanarias.org",
+        "Referer": url_cat
+    }
+    
     try:
-        r_pdf = session.post(url_cat, data=payload_pdf, timeout=45)
-        if r_pdf.status_code != 200 or b"%PDF" not in r_pdf.content[:10]:
+        r_pdf = session.post(url_cat, data=payload_pdf, headers=headers_ajax, timeout=45)
+        
+        # Si el servidor responde con XML parcial en vez de PDF binario directo debido al transporte AJAX
+        content = r_pdf.content
+        if b"%PDF" not in content[:20] and b"<form" in content:
+            # Reintento síncrono limpio si el estado requiere fallback estándar sin cabecera parcial
+            payload_fallback = {
+                "j_idt13": "j_idt13",
+                "j_idt13:categoriasSOM_input": "97",
+                "j_idt13:j_idt15": "j_idt13:j_idt15",
+                "javax.faces.ViewState": vs_actual
+            }
+            r_pdf = session.post(url_cat, data=payload_fallback, timeout=45)
+            content = r_pdf.content
+
+        if r_pdf.status_code != 200 or b"%PDF" not in content[:20]:
             print(f"❌ No se pudo obtener un PDF válido del SCS para la gerencia {valor_gerencia}")
+            # Crear un archivo CSV vacío de salvaguarda para que el paso del Workflow de Git no falle
+            if not os.path.exists(csv_path):
+                with open(csv_path, "w", encoding="utf-8") as f: pass
             return {}
 
         pdf_temp = f"temp_{valor_gerencia}.pdf"
         with open(pdf_temp, "wb") as f:
-            f.write(r_pdf.content)
+            f.write(content)
 
         mapeo = {}
         with pdfplumber.open(pdf_temp) as pdf:
@@ -138,10 +170,12 @@ def actualizar_mapeo_pdf(session, valor_gerencia, vs_actual, csv_path):
         return mapeo
     except Exception as e:
         print(f"Error crítico al procesar PDF de la gerencia {valor_gerencia}: {e}")
+        if not os.path.exists(csv_path):
+            with open(csv_path, "w", encoding="utf-8") as f: pass
         return {}
 
 def cargar_mapeo_nombres(session, valor_gerencia, vs_final, csv_path):
-    if os.path.exists(csv_path):
+    if os.path.exists(csv_path) and os.path.getsize(csv_path) > 0:
         mtime = datetime.fromtimestamp(os.path.getmtime(csv_path))
         if datetime.now() - mtime < timedelta(days=7):
             mapeo = {}
