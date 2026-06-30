@@ -1,5 +1,4 @@
-name: Monitor SCS Fisio
-
+name: Monitor SCS
 on:
   schedule:
     - cron: '*/15 * * * *'
@@ -8,48 +7,17 @@ on:
 jobs:
   monitor:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    permissions: contents: write
     steps:
-      - name: Checkout del repositorio
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: true
-          fetch-depth: 0 # Necesario para asegurar que el push funcione bien
-
-      - name: Configurar Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
-      - name: Instalar dependencias
-        run: |
-          pip install --upgrade pip
-          pip install requests beautifulsoup4 pdfplumber google-api-python-client google-auth
-
-      - name: Ejecutar Monitor de Fisioterapia
-        env:
-          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
-          TELEGRAM_CHAT_ID_FISIO: ${{ secrets.TELEGRAM_CHAT_ID_FISIO }}
-          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
-        run: python tiempo_real.py
-
-      - name: Diagnostico y Push
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.10'}
+      - run: pip install requests beautifulsoup4 pdfplumber google-api-python-client google-auth
+      - run: python tiempo_real.py
+      - name: Commit y Push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          
-          echo "--- Estado del repositorio ---"
-          git status
-          
-          # Añadimos solo los ficheros que nos interesan
-          git add estado_*.txt mapeo_fisio_*.csv
-          
-          # Comprobamos si hay cambios
-          if ! git diff --cached --quiet; then
-            echo "Cambios detectados, realizando commit..."
-            git commit -m "🔄 Actualización automática: Estados y Mapeos [Skip CI]"
-            git push origin main
-          else
-            echo "No se detectaron cambios en archivos rastreados."
-          fi
+          git add *.txt *.csv
+          git commit -m "🔄 Actualización" || echo "Sin cambios"
+          git push origin main
