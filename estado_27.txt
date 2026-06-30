@@ -1,1 +1,1 @@
-Corta duración:106--Larga duración:12--Interinidad en plaza vacante:3-55Corta duración:---Larga duración:---Interinidad en plaza vacante:---
+Corta duración:106--|Larga duración:12--|Interinidad en plaza vacante:3-55|Corta duración:---|Larga duración:---|Interinidad en plaza vacante:---|

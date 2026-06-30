@@ -1,1 +1,1 @@
-Corta duración:193--Larga duración:74-445Interinidad en plaza vacante:20-150Corta duración:49-320Larga duración:49-320Interinidad en plaza vacante:3-32
+Corta duración:193--|Larga duración:74-445|Interinidad en plaza vacante:20-150|Corta duración:49-320|Larga duración:49-320|Interinidad en plaza vacante:3-32|
