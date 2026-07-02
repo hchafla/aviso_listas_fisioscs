@@ -3,6 +3,7 @@ import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
 import json
+import csv
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 
@@ -26,6 +27,50 @@ GERENCIAS_TOTALES = [
     {"nombre": "Atención Primaria Gran Canaria", "valor": "20", "thread_id": 10},
     {"nombre": "Dr. Negrín", "valor": "21", "thread_id": 12}
 ]
+
+# Diccionario explícito para vincular el string 'valor' con su archivo CSV físico
+MAPEO_CSV = {
+    "20": "gapgc.csv",
+    "21": "negrin.csv",
+    "22": "lanzarote.csv",
+    "23": "fuerteventura.csv",
+    "24": "chuimi.csv",
+    "25": "candelaria.csv",
+    "26": "lapalma.csv",
+    "27": "lagomera.csv",
+    "28": "elhierro.csv",
+    "30": "gaptf.csv"
+}
+
+def formatear_nombre(nombre_raw):
+    """Transforma 'APELLIDOS, NOMBRE' a 'Nombre Apellidos' con formato Capitalizado."""
+    if ',' not in nombre_raw:
+        return nombre_raw.strip().title()
+    
+    apellidos, nombre = nombre_raw.split(',', 1)
+    return f"{nombre.strip().title()} {apellidos.strip().title()}"
+
+def buscar_nombre_en_csv(valor_gerencia, orden_gerencia):
+    """Busca en el archivo CSV correspondiente el nombre por el campo orden_gerencia.
+    Usa utf-8-sig para omitir el BOM generado por generar_csv.py."""
+    nombre_archivo = MAPEO_CSV.get(str(valor_gerencia))
+    if not nombre_archivo:
+        return "Nombre no encontrado (actualizar listado)"
+    
+    ruta_csv = os.path.join("nombres", nombre_archivo)
+    if not os.path.exists(ruta_csv):
+        return "Nombre no encontrado (actualizar listado)"
+    
+    try:
+        with open(ruta_csv, mode="r", encoding="utf-8-sig") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                if str(row.get("orden_gerencia", "")).strip() == str(orden_gerencia).strip():
+                    return formatear_nombre(row.get("nombre", ""))
+    except Exception as e:
+        print(f"Error leyendo {ruta_csv}: {e}")
+        
+    return "Nombre no encontrado (actualizar listado)"
 
 def obtener_servicio_sheets():
     creds_json = os.environ.get("GOOGLE_CREDENTIALS")
@@ -93,7 +138,6 @@ def procesar_gerencia(session, sheets_service, nombre, valor_gerencia, thread_id
     url_base = "https://www3.gobiernodecanarias.org/sanidad/scs/ConsultaSIGLE/index.xhtml"
     url_cat = "https://www3.gobiernodecanarias.org/sanidad/scs/ConsultaSIGLE/categorias.xhtml"
     
-    # Revertido al nombre original sin prefijo para usar tus archivos actuales
     fichero_estado = f"estado_{valor_gerencia}.txt"
 
     try:
@@ -130,15 +174,22 @@ def procesar_gerencia(session, sheets_service, nombre, valor_gerencia, thread_id
                 celdas = [c.get_text(strip=True) for c in fila.find_all("td")]
                 info_linea = f"{celdas[0]}:{celdas[1]}-{celdas[2]}"
                 
-                texto_linea = f"  • {celdas[0]} ➔ Gerencia: `{celdas[1]}` | Global: `{celdas[2]}`"
-                
+                # Control de formato según si la línea concreta sufrió cambios
                 if estado_ant and (info_linea not in estado_ant):
-                    texto_linea = f"⚠️ {texto_linea}"
+                    # LÍNEA MODIFICADA: Estilos de Markdown balanceados sin asteriscos huérfanos
+                    nombre_aspirante = buscar_nombre_en_csv(valor_gerencia, celdas[1])
+                    texto_linea = (
+                        f"⚠️ *• {celdas[0]} ➔ Gerencia:* `{celdas[1]}` *| Global:* `{celdas[2]}`\n"
+                        f"     👤 {nombre_aspirante}"
+                    )
                     tipo_lista = "Ordinaria" if idx < 3 else "Discapacidad"
                     registrar_en_sheets(sheets_service, nombre, tipo_lista, celdas[0], celdas[1], celdas[2], fecha_sheets)
-                elif not estado_ant:
-                    tipo_lista = "Ordinaria" if idx < 3 else "Discapacidad"
-                    registrar_en_sheets(sheets_service, nombre, tipo_lista, celdas[0], celdas[1], celdas[2], fecha_sheets)
+                else:
+                    # LÍNEA SIN CAMBIOS: Mantiene el formato estándar original sin el nombre
+                    texto_linea = f"  • {celdas[0]} ➔ Gerencia: {celdas[1]} | Global: {celdas[2]}"
+                    if not estado_ant:
+                        tipo_lista = "Ordinaria" if idx < 3 else "Discapacidad"
+                        registrar_en_sheets(sheets_service, nombre, tipo_lista, celdas[0], celdas[1], celdas[2], fecha_sheets)
                 
                 if idx < 3: 
                     lineas_ord.append(texto_linea)
