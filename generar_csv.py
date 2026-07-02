@@ -5,7 +5,7 @@ import pdfplumber
 CARPETA_PDF = "pdf"
 CARPETA_CSV = "nombres"
 
-# Crear la carpeta de salida si no existe
+# Crear carpeta de salida si no existe
 os.makedirs(CARPETA_CSV, exist_ok=True)
 
 for archivo in os.listdir(CARPETA_PDF):
@@ -19,7 +19,7 @@ for archivo in os.listdir(CARPETA_PDF):
         archivo.replace(".pdf", ".csv")
     )
 
-    print(f"Procesando {archivo}...")
+    print(f"\nProcesando {archivo}...")
 
     filas_csv = []
 
@@ -31,15 +31,14 @@ for archivo in os.listdir(CARPETA_PDF):
 
             for tabla in tablas:
 
-                # Buscamos la tabla de personas
                 if not tabla:
                     continue
 
                 encabezado = tabla[0]
 
+                # Solo nos interesa la tabla que contiene los nombres
                 if encabezado and "Nombre" in encabezado:
 
-                    # Saltamos la cabecera
                     for fila in tabla[1:]:
 
                         if len(fila) < 4:
@@ -50,7 +49,6 @@ for archivo in os.listdir(CARPETA_PDF):
                         nombre = fila[2]
                         situacion = fila[3]
 
-                        # Evitamos filas vacías
                         if not orden_gerencia or not nombre:
                             continue
 
@@ -76,4 +74,19 @@ for archivo in os.listdir(CARPETA_PDF):
 
     print(f" -> {len(filas_csv)} registros guardados.")
 
-print("\nProceso terminado.")
+print("\n========================")
+print("CSV generado correctamente.")
+print("========================")
+
+# Mostrar un ejemplo para comprobar que todo está bien
+csv_prueba = os.path.join(CARPETA_CSV, "gapgc.csv")
+
+if os.path.exists(csv_prueba):
+    print("\nPrimeras 20 líneas de gapgc.csv:\n")
+
+    with open(csv_prueba, encoding="utf-8-sig") as f:
+        for i, linea in enumerate(f):
+            print(linea.strip())
+
+            if i >= 19:
+                break
