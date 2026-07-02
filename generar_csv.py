@@ -1,28 +1,79 @@
+import os
+import csv
 import pdfplumber
 
-PDF = "pdf/gapgc.pdf"   # Cambia el nombre si el tuyo es otro
+CARPETA_PDF = "pdf"
+CARPETA_CSV = "nombres"
 
-with pdfplumber.open(PDF) as pdf:
+# Crear la carpeta de salida si no existe
+os.makedirs(CARPETA_CSV, exist_ok=True)
 
-    print("=" * 80)
-    print(f"Páginas del PDF: {len(pdf.pages)}")
-    print("=" * 80)
+for archivo in os.listdir(CARPETA_PDF):
 
-    pagina = pdf.pages[0]
+    if not archivo.lower().endswith(".pdf"):
+        continue
 
-    print("\nTEXTO:\n")
-    print(pagina.extract_text())
+    ruta_pdf = os.path.join(CARPETA_PDF, archivo)
+    ruta_csv = os.path.join(
+        CARPETA_CSV,
+        archivo.replace(".pdf", ".csv")
+    )
 
-    print("\n" + "=" * 80)
-    print("TABLAS")
-    print("=" * 80)
+    print(f"Procesando {archivo}...")
 
-    tablas = pagina.extract_tables()
+    filas_csv = []
 
-    print(f"Encontradas: {len(tablas)}")
+    with pdfplumber.open(ruta_pdf) as pdf:
 
-    for i, tabla in enumerate(tablas):
-        print(f"\nTABLA {i+1}")
+        for pagina in pdf.pages:
 
-        for fila in tabla[:15]:
-            print(fila)
+            tablas = pagina.extract_tables()
+
+            for tabla in tablas:
+
+                # Buscamos la tabla de personas
+                if not tabla:
+                    continue
+
+                encabezado = tabla[0]
+
+                if encabezado and "Nombre" in encabezado:
+
+                    # Saltamos la cabecera
+                    for fila in tabla[1:]:
+
+                        if len(fila) < 4:
+                            continue
+
+                        orden_gerencia = fila[0]
+                        orden_general = fila[1]
+                        nombre = fila[2]
+                        situacion = fila[3]
+
+                        # Evitamos filas vacías
+                        if not orden_gerencia or not nombre:
+                            continue
+
+                        filas_csv.append([
+                            orden_gerencia,
+                            orden_general,
+                            nombre,
+                            situacion
+                        ])
+
+    with open(ruta_csv, "w", newline="", encoding="utf-8-sig") as f:
+
+        writer = csv.writer(f)
+
+        writer.writerow([
+            "orden_gerencia",
+            "orden_general",
+            "nombre",
+            "situacion"
+        ])
+
+        writer.writerows(filas_csv)
+
+    print(f" -> {len(filas_csv)} registros guardados.")
+
+print("\nProceso terminado.")
