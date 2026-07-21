@@ -1,4 +1,5 @@
 name: Monitor SCS
+
 on:
   workflow_dispatch:
   repository_dispatch:
@@ -7,17 +8,18 @@ on:
 jobs:
   check-scs:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v3
-      
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.9'
-          
+
       - name: Instalar dependencias
         run: |
           pip install requests beautifulsoup4 google-auth google-api-python-client
-          
+
       - name: Ejecutar script
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
@@ -25,9 +27,15 @@ jobs:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
           TZ: Atlantic/Canary
         run: python tiempo_real.py
-        
-      # Esta parte se mantiene si decides seguir usando .txt, 
-      # pero se recomienda migrar a Google Sheets como base de datos.
+
+      - name: Subir HTML de depuración
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-html
+          path: debug_*.html
+          if-no-files-found: ignore
+
       - name: Guardar estado
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
