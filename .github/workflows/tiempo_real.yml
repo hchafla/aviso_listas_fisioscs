@@ -5,6 +5,10 @@ on:
   repository_dispatch:
     types: [ejecutar-monitor]
 
+concurrency:
+  group: monitor-scs-fisio
+  cancel-in-progress: false
+
 jobs:
   check-scs:
     runs-on: ubuntu-latest
@@ -42,4 +46,5 @@ jobs:
           git config --local user.name "github-actions[bot]"
           git add estado_*.txt || true
           git commit -m "Actualizar estados de gerencias [skip ci]" -a || true
-          git push || true
+          git pull --rebase --autostash origin "${GITHUB_REF_NAME}" || true
+          git push || echo "::warning::El push de estado_*.txt ha fallado; revisar manualmente si persiste"
