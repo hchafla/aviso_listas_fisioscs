@@ -151,7 +151,16 @@ def procesar_gerencia(session, sheets_service, nombre, valor_gerencia, thread_id
         
         soup = BeautifulSoup(r_final.text, "html.parser")
         filas = [f for f in soup.find_all("tr") if len(f.find_all("td")) >= 3 and any(kw in f.get_text() for kw in ["Corta", "Larga", "Interinidad"])]
-        
+
+        print(f"[{nombre}] Filas válidas detectadas en la tabla: {len(filas)}")
+
+        if len(filas) == 0:
+            # SIGLE no ha devuelto la tabla esperada en esta ejecución.
+            # No tocamos el fichero de estado ni enviamos nada: evita que se
+            # pise el estado_bueno anterior con una cadena vacía, que era la
+            # causa de los avisos "vacío -> repetido sin cambios" de hoy.
+            return
+
         datos_actuales = ""
         lineas_ord, lineas_disc = [], []
         
