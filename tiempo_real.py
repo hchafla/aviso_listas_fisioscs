@@ -80,13 +80,19 @@ def obtener_servicio_sheets():
     try:
         info = json.loads(creds_json)
         creds = Credentials.from_service_account_info(info, scopes=["https://www.googleapis.com/auth/spreadsheets"])
-        return build("sheets", "v4", credentials=creds).spreadsheets()
+        servicio = build("sheets", "v4", credentials=creds).spreadsheets()
+        print("Conexión con Google Sheets API establecida correctamente.")
+        return servicio
     except Exception as e:
         print(f"Error al conectar con Google Sheets API: {e}")
         return None
 
 def registrar_en_sheets(sheets_service, nombre_gerencia, tipo_lista, contrato, num_gerencia, num_global, fecha_actual):
     if not sheets_service:
+        print(
+            f"AVISO: no se registró {nombre_gerencia} ({contrato}) en Sheets "
+            "porque sheets_service es None (revisa la variable GOOGLE_CREDENTIALS)."
+        )
         return
     
     try:
@@ -101,17 +107,19 @@ def registrar_en_sheets(sheets_service, nombre_gerencia, tipo_lista, contrato, n
 
     valores = [[fecha_actual, nombre_gerencia, tipo_lista, contrato, num_g, num_gl]]
     cuerpo = {"values": valores}
+
+    print(f"Intentando registrar en Sheets: {valores}")
     
     try:
-        sheets_service.values().append(
+        respuesta = sheets_service.values().append(
             spreadsheetId=SPREADSHEET_ID,
             range="Histórico_Datos!A:F",
             valueInputOption="USER_ENTERED",
             body=cuerpo
         ).execute()
-        print(f"Fila registrada en Sheets para {nombre_gerencia} ({contrato})")
+        print(f"Fila registrada en Sheets para {nombre_gerencia} ({contrato}). Respuesta API: {respuesta.get('updates', respuesta)}")
     except Exception as e:
-        print(f"Error al escribir en Google Sheets: {e}")
+        print(f"Error al escribir en Google Sheets para {nombre_gerencia} ({contrato}): {e}")
 
 def enviar_telegram(mensaje, thread_id):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
@@ -174,7 +182,11 @@ def procesar_gerencia(session, sheets_service, nombre, valor_gerencia, thread_id
             info_linea = f"{celdas[0]}:{celdas[1]}-{celdas[2]}"
             datos_actuales += info_linea + "|"
 
+        print(f"[{nombre}] Estado anterior : {estado_ant or '(vacío / primera ejecución)'}")
+        print(f"[{nombre}] Estado actual    : {datos_actuales}")
+
         if datos_actuales != estado_ant:
+            print(f"[{nombre}] Cambio detectado respecto al estado guardado.")
             ahora = datetime.now()
             fecha_sheets = ahora.strftime("%Y-%m-%d %H:%M:%S")
             fecha_telegram = ahora.strftime("%d/%m/%Y - %H:%M")
@@ -186,6 +198,7 @@ def procesar_gerencia(session, sheets_service, nombre, valor_gerencia, thread_id
                 # Control de formato según si la línea concreta sufrió cambios
                 if estado_ant and (info_linea not in estado_ant):
                     # LÍNEA MODIFICADA: Estilos de Markdown balanceados sin asteriscos huérfanos
+                    print(f"[{nombre}] Línea CAMBIADA -> se registra en Sheets: {info_linea}")
                     nombre_aspirante = buscar_nombre_en_csv(valor_gerencia, celdas[1])
                     texto_linea = (
                         f"⚠️ *• {celdas[0]} ➔ Gerencia:* `{celdas[1]}` *| Global:* `{celdas[2]}`\n"
@@ -197,8 +210,11 @@ def procesar_gerencia(session, sheets_service, nombre, valor_gerencia, thread_id
                     # LÍNEA SIN CAMBIOS: Mantiene el formato estándar original sin el nombre
                     texto_linea = f"  • {celdas[0]} ➔ Gerencia: {celdas[1]} | Global: {celdas[2]}"
                     if not estado_ant:
+                        print(f"[{nombre}] Primera ejecución -> se registra baseline en Sheets: {info_linea}")
                         tipo_lista = "Ordinaria" if idx < 3 else "Discapacidad"
                         registrar_en_sheets(sheets_service, nombre, tipo_lista, celdas[0], celdas[1], celdas[2], fecha_sheets)
+                    else:
+                        print(f"[{nombre}] Línea sin cambios -> no se registra: {info_linea}")
                 
                 if idx < 3: 
                     lineas_ord.append(texto_linea)
@@ -213,6 +229,8 @@ def procesar_gerencia(session, sheets_service, nombre, valor_gerencia, thread_id
             
             msg = f"🔄 *SCS: {nombre}*\n📅 _Actualizado: {fecha_telegram}_\n🏥 *Fisioterapeuta*\n\n📋 *Ordinarios:*\n{txt_ord}\n\n♿ *Discapacidad:*\n{txt_disc}\n\n🔗 [Ver en la web]({URL_WEB})"
             enviar_telegram(msg, thread_id)
+        else:
+            print(f"[{nombre}] Sin cambios respecto a la última ejecución. No se envía Telegram ni se registra en Sheets.")
             
     except Exception as e:
         print(f"Error en {nombre}: {e}")
