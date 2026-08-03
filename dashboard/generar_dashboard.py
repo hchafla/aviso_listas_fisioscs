@@ -2,6 +2,7 @@ import csv
 from datetime import datetime, timedelta
 import json
 from collections import defaultdict, Counter
+import urllib.request
 
 # Fecha de referencia actual del sistema (ajustada al entorno de logs: 2026-01-06)
 FECHA_ACTUAL = datetime(2026, 1, 6, 23, 33, 0)
@@ -27,11 +28,20 @@ def clasificar_actividad(actualizaciones_30d, dias_activos_30d):
     else:
         return "Muy baja"
 
-def generar_dashboard_data(ruta_csv):
+def generar_dashboard_data(url_o_ruta):
+    ruta_csv_temporal = "temp_logs.csv"
+    
+    # Descargar si es un enlace web, de lo contrario usar ruta local
+    if url_o_ruta.startswith("http://") or url_o_ruta.startswith("https://"):
+        urllib.request.urlretrieve(url_o_ruta, ruta_csv_temporal)
+        archivo_a_leer = ruta_csv_temporal
+    else:
+        archivo_a_leer = url_o_ruta
+
     gerencias_data = defaultdict(list)
     
     # 1. Lectura y agrupación por gerencia (Columna B: Gerencia / Nombre)
-    with open(ruta_csv, mode='r', encoding='utf-8') as f:
+    with open(archivo_a_leer, mode='r', encoding='utf-8') as f:
         lector = csv.reader(f)
         for fila in lector:
             if len(fila) < 2:
@@ -147,4 +157,4 @@ def generar_dashboard_data(ruta_csv):
         json.dump(resultado_final, f_json, ensure_ascii=False, indent=2)
 
 if __name__ == "__main__":
-    generar_dashboard_data("logs_20260106-2333.csv")
+    generar_dashboard_data("https://docs.google.com/spreadsheets/d/1nmfP4nXQ4Oydvic_rZ1K19zCQBinAicHG38MeKUO0MU/export?format=csv")
