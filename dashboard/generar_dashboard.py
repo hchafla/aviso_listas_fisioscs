@@ -20,10 +20,8 @@ def descargar_csv_de_sheets(file_id, ruta_salida="llamamientos.csv"):
 
 
 def generar_dashboard():
-    # ID de tu Google Sheets extraído del enlace proporcionado
     sheet_id = "1sHmB41ka-RyK-F04Chf7F40dirLO34Dhx2KmAYaV1W8"
 
-    # 1. Descargar y cargar los datos
     if not descargar_csv_de_sheets(sheet_id, "llamamientos.csv"):
         return
 
@@ -34,6 +32,16 @@ def generar_dashboard():
 
     df = pd.read_csv(archivo_csv)
 
+    # Limpiar espacios en blanco en los nombres de las columnas por si acaso
+    df.columns = df.columns.str.strip()
+
+    # Comprobación de seguridad para la columna de fecha
+    if "FechaHora" not in df.columns:
+        print(
+            f"Error: No se encuentra la columna 'FechaHora'. Columnas disponibles en el CSV: {list(df.columns)}"
+        )
+        return
+
     # Limpieza básica y conversión de fechas
     df["FechaHora"] = pd.to_datetime(df["FechaHora"])
     df = df.sort_values("FechaHora", ascending=True)
@@ -42,7 +50,7 @@ def generar_dashboard():
     df["NumeroGerencia"] = pd.to_numeric(df["NumeroGerencia"], errors="coerce")
 
     ahora = datetime.now()
-    fecha_actualizacion = ah_str = ahora.strftime("%Y-%m-%dT%H:%M:%SZ")
+    fecha_actualizacion = ahora.strftime("%Y-%m-%dT%H:%M:%SZ")
 
     # 2. Construir estado actual y ranking por gerencia
     estado_por_gerencia = {}
