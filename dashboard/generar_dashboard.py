@@ -1,4 +1,3 @@
-from datetime import datetime, timedelta
 import json
 from pathlib import Path
 import pandas as pd
@@ -11,10 +10,9 @@ def descargar_csv_de_sheets(file_id, ruta_salida="llamamientos.csv"):
         )
         df = pd.read_csv(url_descarga)
         df.to_csv(ruta_salida, index=False)
-        print("CSV descargado correctamente desde Google Sheets.")
         return True
     except Exception as e:
-        print(f"Error al descargar el CSV desde Google Sheets: {e}")
+        print(f"Error al descargar el CSV: {e}")
         return False
 
 
@@ -26,7 +24,6 @@ def generar_dashboard():
 
     archivo_csv = "llamamientos.csv"
     if not Path(archivo_csv).exists():
-        print(f"No se encuentra el archivo {archivo_csv}")
         return
 
     df = pd.read_csv(archivo_csv, header=None)
@@ -50,7 +47,7 @@ def generar_dashboard():
             "NumeroGerencia",
         ][: df.shape[1]]
 
-    # Conversión robusta de fechas
+    # Parsear fechas de forma limpia
     df["FechaHora"] = pd.to_datetime(
         df["FechaHora"], dayfirst=True, errors="coerce"
     )
@@ -58,21 +55,17 @@ def generar_dashboard():
     df = df.sort_values("FechaHora", ascending=True)
 
     if df.empty:
-        print(
-            "¡Alerta! No quedan filas válidas después de filtrar las fechas nulas."
-        )
+        print("Error: No hay registros con fechas válidas.")
         return
 
     df["NumeroGerencia"] = pd.to_numeric(df["NumeroGerencia"], errors="coerce")
 
-    # Referencia temporal basada estrictamente en la fecha actual del servidor (ahora)
-    ahora = datetime.now()
-    fecha_actualizacion = ahora.strftime("%Y-%m-%dT%H:%M:%SZ")
+    # La última actualización es simplemente la fecha del último registro del CSV
+    fecha_actualizacion = df["FechaHora"].max().strftime("%Y-%m-%dT%H:%M:%SZ")
 
-    # 2. Construir estado actual y ranking por gerencia
+    # 1. Estado actual y ranking por gerencia
     estado_por_gerencia = {}
     ranking_list = []
-
     ultimos_registros = df.groupby("Gerencia").tail(1)
 
     for _, row in ultimos_registros.iterrows():
@@ -108,31 +101,19 @@ def generar_dashboard():
         ranking_list, key=lambda x: x["ultimo_numero"] or 0, reverse=True
     )
 
-    # 3. Análisis temporal por ventanas de días estrictas basadas en la fecha actual real (ahora)
-    ventanas = [7, 15, 30, 90, 180]
-    metricas_por_ventana = {}
+    # 2. Análisis histórico completo (sin restricciones de días inventadas)
+    maximos_gerencia = {}
+    max_por_g = df.groupby("Gerencia")["NumeroGerencia"].max().to_dict()
+    for g, val in max_por_g.items():
+        if pd.notna(val):
+            maximos_gerencia[g] = int(val)
 
-    for dias in ventanas:
-        fecha_limite = ahora - timedelta(days=dias)
-        df_ventana = df[df["FechaHora"] >= fecha_limite]
+    metricas_historicas = {
+        "total_cambios": int(len(df)),
+        "maximo_por_gerencia": maximos_gerencia,
+    }
 
-        maximos_gerencia = {}
-        if not df_ventana.empty:
-            max_por_g = (
-                df_ventana.groupby("Gerencia")["NumeroGerencia"]
-                .max()
-                .to_dict()
-            )
-            for g, val in max_por_g.items():
-                if pd.notna(val):
-                    maximos_gerencia[g] = int(val)
-
-        metricas_por_ventana[str(dias)] = {
-            "total_cambios": int(len(df_ventana)),
-            "maximo_por_gerencia": maximos_gerencia,
-        }
-
-    # 4. Evolución temporal
+    # 3. Evolución temporal con todos los datos
     df["FechaSolo"] = df["FechaHora"].dt.strftime("%Y-%m-%d")
     df_evolucion = (
         df.groupby(["FechaSolo", "Gerencia", "TipoNombramiento", "Lista"])[
@@ -155,7 +136,7 @@ def generar_dashboard():
                 }
             )
 
-    # 5. Estructura final del JSON
+    # 4. Estructura JSON final
     dashboard_data = {
         "metadata": {
             "ultima_actualizacion": fecha_actualizacion,
@@ -167,8 +148,7 @@ def generar_dashboard():
             "ranking": ranking_list,
         },
         "analisis_temporal": {
-            "ventanas_dias": ventanas,
-            "metricas_por_ventana": metricas_por_ventana,
+            "metricas_historicas": metricas_historicas,
         },
         "consulta_usuario": {
             "nota": "Estructura preparada para consultas de umbrales en frontend."
@@ -176,14 +156,11 @@ def generar_dashboard():
         "evolucion_temporal": evolucion_temporal,
     }
 
-    # 6. Guardar el archivo directamente en la carpeta actual
     archivo_salida = "dashboard.json"
     with open(archivo_salida, "w", encoding="utf-8") as f:
         json.dump(dashboard_data, f, ensure_ascii=False, indent=2)
 
-    print(
-        f"¡ {archivo_salida} generado con éxito con {len(estado_por_gerencia)} gerencias!"
-    )
+    print(f"Dashboard generado correctamente con {len(estado_por_gerencia)} gerencias y {len(evolucion_temporal)} registros.")
 
 
 if __name__ == "__main__":
