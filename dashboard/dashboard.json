@@ -1,0 +1,46 @@
+{
+  "metadata": {
+    "ultima_actualizacion": "2026-08-03T14:54:51Z",
+    "categoria": "Fisioterapia",
+    "fuente": "Servicio Canario de la Salud (SCS)"
+  },
+  "estado_actual": {
+    "por_gerencia": {},
+    "ranking": []
+  },
+  "analisis_temporal": {
+    "ventanas_dias": [
+      7,
+      15,
+      30,
+      90,
+      180
+    ],
+    "metricas_por_ventana": {
+      "7": {
+        "total_cambios": 0,
+        "maximo_por_gerencia": {}
+      },
+      "15": {
+        "total_cambios": 0,
+        "maximo_por_gerencia": {}
+      },
+      "30": {
+        "total_cambios": 0,
+        "maximo_por_gerencia": {}
+      },
+      "90": {
+        "total_cambios": 0,
+        "maximo_por_gerencia": {}
+      },
+      "180": {
+        "total_cambios": 0,
+        "maximo_por_gerencia": {}
+      }
+    }
+  },
+  "consulta_usuario": {
+    "nota": "Estructura preparada para consultas de umbrales en frontend."
+  },
+  "evolucion_temporal": []
+}
