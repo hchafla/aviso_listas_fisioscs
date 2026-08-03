@@ -1,161 +1,70 @@
+csv
+from datetime import datetime
 import json
-from pathlib import Path
-import pandas as pd
+from collections import defaultdict
 
-
-def descargar_csv_de_sheets(file_id, ruta_salida="llamamientos.csv"):
+def parsear_fecha(fecha_str):
     try:
-        url_descarga = (
-            f"https://docs.google.com/spreadsheets/d/{file_id}/export?format=csv"
-        )
-        df = pd.read_csv(url_descarga)
-        df.to_csv(ruta_salida, index=False)
-        print("CSV descargado correctamente desde Google Sheets.")
-        return True
-    except Exception as e:
-        print(f"Error al descargar el CSV: {e}")
-        return False
+        return datetime.strptime(fecha_str.strip(), "%d/%m/%y, %H:%M:%S")
+    except ValueError:
+        try:
+            return datetime.strptime(fecha_str.strip(), "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            return None
 
+def generar_dashboard_data(ruta_csv):
+    gerencias_data = defaultdict(list)
+    
+    # Lectura del CSV respetando la estructura original
+    with open(ruta_csv, mode='r', encoding='utf-8') as f:
+        lector = csv.reader(f)
+        for fila in lector:
+            if len(fila) < 3:
+                continue
+            
+            fecha = parsear_fecha(fila[0])
+            gerencia = fila[1].strip()
+            
+            try:
+                numero = int(fila[2].strip())
+            except ValueError:
+                continue  # Descartar filas con números no válidos
+                
+            # Campos opcionales si vienen en el CSV, con valores por defecto limpios
+            lista = fila[3].strip() if len(fila) > 3 else "General"
+            tipo = fila[4].strip() if len(fila) > 4 else "Ordinaria"
 
-def generar_dashboard():
-    # ID correcto actualizado con tu enlace de Google Sheets
-    sheet_id = "1nmfP4nXQ4Oydvic_rZ1K19zCQBinAicHG38MeKUO0MU"
-
-    if not descargar_csv_de_sheets(sheet_id, "llamamientos.csv"):
-        return
-
-    archivo_csv = "llamamientos.csv"
-    if not Path(archivo_csv).exists():
-        print(f"No se encuentra el archivo {archivo_csv}")
-        return
-
-    # Lectura directa gracias a que el CSV ya tiene cabecera
-    df = pd.read_csv(archivo_csv)
-
-    print("--- DIAGNÓSTICO DE DATOS ---")
-    print(f"Dimensiones del DataFrame (filas, columnas): {df.shape}")
-    print("Primeras filas leídas:")
-    print(df.head())
-    print("----------------------------")
-
-    # Conversión directa de fecha y número
-    df["FechaHora"] = pd.to_datetime(df["FechaHora"], errors="coerce")
-    df["NumeroGerencia"] = pd.to_numeric(df["NumeroGerencia"], errors="coerce")
-
-    # Limpieza de nulos en columnas críticas
-    df = df.dropna(subset=["FechaHora", "Gerencia"])
-    df = df.sort_values("FechaHora", ascending=True)
-
-    if df.empty:
-        print(
-            "¡Alerta! El DataFrame está vacío después de limpiar nulos. Revisa las fechas."
-        )
-        return
-
-    # La última actualización es la fecha del último registro
-    fecha_actualizacion = df["FechaHora"].max().strftime("%Y-%m-%dT%H:%M:%SZ")
-
-    # 1. Estado actual y ranking por gerencia
-    estado_por_gerencia = {}
-    ranking_list = []
-    ultimos_registros = df.groupby("Gerencia").tail(1)
-
-    for _, row in ultimos_registros.iterrows():
-        gerencia = row["Gerencia"]
-        num_gerencia = (
-            int(row["NumeroGerencia"])
-            if pd.notna(row["NumeroGerencia"])
-            else None
-        )
-        fecha_str = row["FechaHora"].strftime("%Y-%m-%dT%H:%M:%SZ")
-
-        estado_por_gerencia[gerencia] = {
-            "numero_gerencia": num_gerencia,
-            "numero_general": None,
-            "lista": row["Lista"],
-            "tipo_nombramiento": row["TipoNombramiento"],
-            "fecha_hora": fecha_str,
-        }
-
-    conteo_historico = df["Gerencia"].value_counts().to_dict()
-
-    for gerencia, datos in estado_por_gerencia.items():
-        ranking_list.append(
-            {
-                "gerencia": gerencia,
-                "ultimo_numero": datos["numero_gerencia"],
-                "fecha_hora": datos["fecha_hora"],
-                "total_cambios_historico": conteo_historico.get(gerencia, 0),
+            if not fecha or not gerencia or gerencia == "NO_HEADER":
+                continue
+            
+            # Cada evento conserva exactamente el histórico crudo solicitado
+            evento = {
+                "fecha": fecha.strftime("%Y-%m-%d %H:%M:%S"),
+                "numero": numero,
+                "lista": lista,
+                "tipo": tipo
             }
-        )
+            
+            gerencias_data[gerencia].append(evento)
 
-    ranking_list = sorted(
-        ranking_list, key=lambda x: x["ultimo_numero"] or 0, reverse=True
-    )
+    resultado_final = []
 
-    # 2. Análisis histórico completo
-    maximos_gerencia = {}
-    max_por_g = df.groupby("Gerencia")["NumeroGerencia"].max().to_dict()
-    for g, val in max_por_g.items():
-        if pd.notna(val):
-            maximos_gerencia[g] = int(val)
+    for gerencia, eventos in gerencias_data.items():
+        # Mantener el orden cronológico original de los eventos
+        eventos.sort(key=lambda x: x["fecha"])
+        
+        # Mantener la estructura general original de tu JSON por gerencia
+        gerencia_obj = {
+            "gerencia_id": gerencia.replace(" ", "_").upper(),
+            "nombre_gerencia": gerencia,
+            "eventos": eventos  # Histórico puro de materia prima
+        }
+        
+        resultado_final.append(gerencia_obj)
 
-    metricas_historicas = {
-        "total_cambios": int(len(df)),
-        "maximo_por_gerencia": maximos_gerencia,
-    }
-
-    # 3. Evolución temporal
-    df["FechaSolo"] = df["FechaHora"].dt.strftime("%Y-%m-%d")
-    df_evolucion = (
-        df.groupby(["FechaSolo", "Gerencia", "TipoNombramiento", "Lista"])[
-            "NumeroGerencia"
-        ]
-        .max()
-        .reset_index()
-    )
-
-    evolucion_temporal = []
-    for _, row in df_evolucion.iterrows():
-        if pd.notna(row["NumeroGerencia"]):
-            evolucion_temporal.append(
-                {
-                    "fecha": row["FechaSolo"],
-                    "gerencia": row["Gerencia"],
-                    "numero_gerencia": int(row["NumeroGerencia"]),
-                    "tipo_nombramiento": row["TipoNombramiento"],
-                    "lista": row["Lista"],
-                }
-            )
-
-    # 4. Estructura JSON final
-    dashboard_data = {
-        "metadata": {
-            "ultima_actualizacion": fecha_actualizacion,
-            "categoria": "Fisioterapia",
-            "fuente": "Servicio Canario de la Salud (SCS)",
-        },
-        "estado_actual": {
-            "por_gerencia": estado_por_gerencia,
-            "ranking": ranking_list,
-        },
-        "analisis_temporal": {
-            "metricas_historicas": metricas_historicas,
-        },
-        "consulta_usuario": {
-            "nota": "Estructura preparada para consultas de umbrales en frontend."
-        },
-        "evolucion_temporal": evolucion_temporal,
-    }
-
-    archivo_salida = "dashboard.json"
-    with open(archivo_salida, "w", encoding="utf-8") as f:
-        json.dump(dashboard_data, f, ensure_ascii=False, indent=2)
-
-    print(
-        f"¡Éxito! Dashboard generado con {len(estado_por_gerencia)} gerencias y {len(evolucion_temporal)} registros de evolución."
-    )
-
+    # Volcado limpio con la misma estructura original
+    with open("dashboard.json", "w", encoding="utf-8") as f_json:
+        json.dump(resultado_final, f_json, ensure_ascii=False, indent=2)
 
 if __name__ == "__main__":
-    generar_dashboard()
+    generar_dashboard_data("logs_20260106-2333.csv")
