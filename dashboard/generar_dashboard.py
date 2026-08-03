@@ -51,25 +51,30 @@ def generar_dashboard():
             "NumeroGerencia",
         ][: df.shape[1]]
 
-    # Conversión de fechas
+    # Conversión de fechas robusta priorizando día/mes/año o formato mixto con dayfirst
     df["FechaHora"] = pd.to_datetime(
-        df["FechaHora"], format="mixed", errors="coerce"
+        df["FechaHora"], dayfirst=True, errors="coerce"
     )
     print(
         f"Filas con fechas válidas tras conversión: {df['FechaHora'].notna().sum()}"
     )
 
     if df["FechaHora"].notna().sum() > 0:
-        print(f"Fecha mínima en el CSV: {df['FechaHora'].min()}")
-        print(f"Fecha máxima en el CSV: {df['FechaHora'].max()}")
+        print(f"Fecha mínima detectada: {df['FechaHora'].min()}")
+        print(f"Fecha máxima detectada: {df['FechaHora'].max()}")
 
     df = df.dropna(subset=["FechaHora"])
     df = df.sort_values("FechaHora", ascending=True)
 
+    if df.empty:
+        print(
+            "¡Alerta! No quedan filas válidas después de filtrar las fechas nulas."
+        )
+        return
+
     df["NumeroGerencia"] = pd.to_numeric(df["NumeroGerencia"], errors="coerce")
 
     ahora = datetime.now()
-    print(f"Fecha/Hora actual del servidor (ahora): {ahora}")
     fecha_actualizacion = ahora.strftime("%Y-%m-%dT%H:%M:%SZ")
 
     # 2. Construir estado actual y ranking por gerencia
@@ -77,9 +82,6 @@ def generar_dashboard():
     ranking_list = []
 
     ultimos_registros = df.groupby("Gerencia").tail(1)
-    print(
-        f"Gerencias encontradas para el estado actual: {list(ultimos_registros['Gerencia'].unique())}"
-    )
 
     for _, row in ultimos_registros.iterrows():
         gerencia = row["Gerencia"]
@@ -121,7 +123,6 @@ def generar_dashboard():
     for dias in ventanas:
         fecha_limite = ahora - timedelta(days=dias)
         df_ventana = df[df["FechaHora"] >= fecha_limite]
-        print(f"Ventana de {dias} días (desde {fecha_limite}): {len(df_ventana)} registros encontrados")
 
         maximos_gerencia = {}
         if not df_ventana.empty:
@@ -162,8 +163,6 @@ def generar_dashboard():
                 }
             )
 
-    print(f"Total registros de evolución temporal generados: {len(evolucion_temporal)}")
-
     # 5. Estructura final del JSON
     dashboard_data = {
         "metadata": {
@@ -190,7 +189,9 @@ def generar_dashboard():
     with open(archivo_salida, "w", encoding="utf-8") as f:
         json.dump(dashboard_data, f, ensure_ascii=False, indent=2)
 
-    print(f"¡ {archivo_salida} generado con éxito!")
+    print(
+        f"¡ {archivo_salida} generado con éxito con {len(estado_por_gerencia)} gerencias y {len(evolucion_temporal)} registros!"
+    )
 
 
 if __name__ == "__main__":
