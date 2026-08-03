@@ -42,7 +42,7 @@ def generar_dashboard():
     df["NumeroGerencia"] = pd.to_numeric(df["NumeroGerencia"], errors="coerce")
 
     ahora = datetime.now()
-    fecha_actualizacion = ahora.strftime("%Y-%m-%dT%H:%M:%SZ")
+    fecha_actualizacion = ah_str = ahora.strftime("%Y-%m-%dT%H:%M:%SZ")
 
     # 2. Construir estado actual y ranking por gerencia
     estado_por_gerencia = {}
@@ -136,7 +136,6 @@ def generar_dashboard():
 
     # 5. Estructura final del JSON
     dashboard_data = {
-        "$schema": "https://testonlineope.es/schemas/dashboard-v1.json",
         "metadata": {
             "ultima_actualizacion": fecha_actualizacion,
             "categoria": "Fisioterapia",
@@ -156,9 +155,8 @@ def generar_dashboard():
         "evolucion_temporal": evolucion_temporal,
     }
 
-    # 6. Guardar el archivo dentro de la carpeta dashboard/
-    Path("dashboard").mkdir(parents=True, exist_ok=True)
-    archivo_salida = "dashboard/dashboard.json"
+    # 6. Guardar el archivo directamente en la carpeta actual (dashboard/)
+    archivo_salida = "dashboard.json"
     with open(archivo_salida, "w", encoding="utf-8") as f:
         json.dump(dashboard_data, f, ensure_ascii=False, indent=2)
 
