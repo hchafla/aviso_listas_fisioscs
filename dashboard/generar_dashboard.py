@@ -30,6 +30,7 @@ def generar_dashboard():
         return
 
     df = pd.read_csv(archivo_csv, header=None)
+    print(f"Total de filas leídas en bruto del CSV: {len(df)}")
 
     if df.shape[1] >= 6:
         df = df.iloc[:, :6]
@@ -50,17 +51,25 @@ def generar_dashboard():
             "NumeroGerencia",
         ][: df.shape[1]]
 
-    # Forzar conversión de fecha robusta especificando format o dayfirst si hace falta
+    # Conversión de fechas
     df["FechaHora"] = pd.to_datetime(
         df["FechaHora"], format="mixed", errors="coerce"
     )
+    print(
+        f"Filas con fechas válidas tras conversión: {df['FechaHora'].notna().sum()}"
+    )
+
+    if df["FechaHora"].notna().sum() > 0:
+        print(f"Fecha mínima en el CSV: {df['FechaHora'].min()}")
+        print(f"Fecha máxima en el CSV: {df['FechaHora'].max()}")
+
     df = df.dropna(subset=["FechaHora"])
     df = df.sort_values("FechaHora", ascending=True)
 
     df["NumeroGerencia"] = pd.to_numeric(df["NumeroGerencia"], errors="coerce")
 
-    # Referencia estricta al día y hora actual del servidor
     ahora = datetime.now()
+    print(f"Fecha/Hora actual del servidor (ahora): {ahora}")
     fecha_actualizacion = ahora.strftime("%Y-%m-%dT%H:%M:%SZ")
 
     # 2. Construir estado actual y ranking por gerencia
@@ -68,6 +77,9 @@ def generar_dashboard():
     ranking_list = []
 
     ultimos_registros = df.groupby("Gerencia").tail(1)
+    print(
+        f"Gerencias encontradas para el estado actual: {list(ultimos_registros['Gerencia'].unique())}"
+    )
 
     for _, row in ultimos_registros.iterrows():
         gerencia = row["Gerencia"]
@@ -102,13 +114,14 @@ def generar_dashboard():
         ranking_list, key=lambda x: x["ultimo_numero"] or 0, reverse=True
     )
 
-    # 3. Análisis temporal por ventanas de días estrictas basadas en 'ahora'
+    # 3. Análisis temporal por ventanas de días
     ventanas = [7, 15, 30, 90, 180]
     metricas_por_ventana = {}
 
     for dias in ventanas:
         fecha_limite = ahora - timedelta(days=dias)
         df_ventana = df[df["FechaHora"] >= fecha_limite]
+        print(f"Ventana de {dias} días (desde {fecha_limite}): {len(df_ventana)} registros encontrados")
 
         maximos_gerencia = {}
         if not df_ventana.empty:
@@ -149,6 +162,8 @@ def generar_dashboard():
                 }
             )
 
+    print(f"Total registros de evolución temporal generados: {len(evolucion_temporal)}")
+
     # 5. Estructura final del JSON
     dashboard_data = {
         "metadata": {
@@ -175,7 +190,7 @@ def generar_dashboard():
     with open(archivo_salida, "w", encoding="utf-8") as f:
         json.dump(dashboard_data, f, ensure_ascii=False, indent=2)
 
-    print(f"¡ {archivo_salida} generado correctamente con referencia a la fecha actual!")
+    print(f"¡ {archivo_salida} generado con éxito!")
 
 
 if __name__ == "__main__":
