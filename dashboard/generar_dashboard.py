@@ -30,7 +30,6 @@ def generar_dashboard():
         return
 
     df = pd.read_csv(archivo_csv, header=None)
-    print(f"Total de filas leídas en bruto del CSV: {len(df)}")
 
     if df.shape[1] >= 6:
         df = df.iloc[:, :6]
@@ -51,18 +50,10 @@ def generar_dashboard():
             "NumeroGerencia",
         ][: df.shape[1]]
 
-    # Conversión de fechas robusta priorizando día/mes/año o formato mixto con dayfirst
+    # Conversión robusta de fechas
     df["FechaHora"] = pd.to_datetime(
         df["FechaHora"], dayfirst=True, errors="coerce"
     )
-    print(
-        f"Filas con fechas válidas tras conversión: {df['FechaHora'].notna().sum()}"
-    )
-
-    if df["FechaHora"].notna().sum() > 0:
-        print(f"Fecha mínima detectada: {df['FechaHora'].min()}")
-        print(f"Fecha máxima detectada: {df['FechaHora'].max()}")
-
     df = df.dropna(subset=["FechaHora"])
     df = df.sort_values("FechaHora", ascending=True)
 
@@ -74,6 +65,7 @@ def generar_dashboard():
 
     df["NumeroGerencia"] = pd.to_numeric(df["NumeroGerencia"], errors="coerce")
 
+    # Referencia temporal basada estrictamente en la fecha actual del servidor (ahora)
     ahora = datetime.now()
     fecha_actualizacion = ahora.strftime("%Y-%m-%dT%H:%M:%SZ")
 
@@ -116,7 +108,7 @@ def generar_dashboard():
         ranking_list, key=lambda x: x["ultimo_numero"] or 0, reverse=True
     )
 
-    # 3. Análisis temporal por ventanas de días
+    # 3. Análisis temporal por ventanas de días estrictas basadas en la fecha actual real (ahora)
     ventanas = [7, 15, 30, 90, 180]
     metricas_por_ventana = {}
 
@@ -184,13 +176,13 @@ def generar_dashboard():
         "evolucion_temporal": evolucion_temporal,
     }
 
-    # 6. Guardar el archivo directamente en la carpeta actual (dashboard/)
+    # 6. Guardar el archivo directamente en la carpeta actual
     archivo_salida = "dashboard.json"
     with open(archivo_salida, "w", encoding="utf-8") as f:
         json.dump(dashboard_data, f, ensure_ascii=False, indent=2)
 
     print(
-        f"¡ {archivo_salida} generado con éxito con {len(estado_por_gerencia)} gerencias y {len(evolucion_temporal)} registros!"
+        f"¡ {archivo_salida} generado con éxito con {len(estado_por_gerencia)} gerencias!"
     )
 
 
