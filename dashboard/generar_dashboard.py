@@ -4,9 +4,7 @@ from pathlib import Path
 import pandas as pd
 
 
-def descargar_csv_de_sheets(
-    file_id, ruta_salida="llamamientos.csv"
-):
+def descargar_csv_de_sheets(file_id, ruta_salida="llamamientos.csv"):
     """Descarga el contenido de un Google Spreadsheet directamente en formato CSV."""
     try:
         url_descarga = (
@@ -158,8 +156,9 @@ def generar_dashboard():
         "evolucion_temporal": evolucion_temporal,
     }
 
-    # 6. Guardar el archivo dashboard.json
-    archivo_salida = "dashboard.json"
+    # 6. Guardar el archivo dentro de la carpeta dashboard/
+    Path("dashboard").mkdir(parents=True, exist_ok=True)
+    archivo_salida = "dashboard/dashboard.json"
     with open(archivo_salida, "w", encoding="utf-8") as f:
         json.dump(dashboard_data, f, ensure_ascii=False, indent=2)
 
