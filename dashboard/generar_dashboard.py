@@ -30,20 +30,34 @@ def generar_dashboard():
         print(f"No se encuentra el archivo {archivo_csv}")
         return
 
-    df = pd.read_csv(archivo_csv)
+    # Leer el CSV indicando que NO tiene cabecera (header=None) y asignando nombres a las columnas
+    df = pd.read_csv(archivo_csv, header=None)
 
-    # Limpiar espacios en blanco en los nombres de las columnas por si acaso
-    df.columns = df.columns.str.strip()
-
-    # Comprobación de seguridad para la columna de fecha
-    if "FechaHora" not in df.columns:
-        print(
-            f"Error: No se encuentra la columna 'FechaHora'. Columnas disponibles en el CSV: {list(df.columns)}"
-        )
-        return
+    # Nos aseguramos de quedarnos al menos con las 6 primeras columnas que nos interesan
+    # 0: FechaHora, 1: Gerencia, 2: Lista, 3: TipoNombramiento, 4: NumeroGerencia, 5: Extra
+    if df.shape[1] >= 6:
+        df = df.iloc[:, :6]
+        df.columns = [
+            "FechaHora",
+            "Gerencia",
+            "Lista",
+            "TipoNombramiento",
+            "NumeroGerencia",
+            "Extra",
+        ]
+    else:
+        # Por si tuviera exactamente 5 columnas
+        df.columns = [
+            "FechaHora",
+            "Gerencia",
+            "Lista",
+            "TipoNombramiento",
+            "NumeroGerencia",
+        ][: df.shape[1]]
 
     # Limpieza básica y conversión de fechas
-    df["FechaHora"] = pd.to_datetime(df["FechaHora"])
+    df["FechaHora"] = pd.to_datetime(df["FechaHora"], errors="coerce")
+    df = df.dropna(subset=["FechaHora"])
     df = df.sort_values("FechaHora", ascending=True)
 
     # Reemplazar valores nulos o "-" en los números por NaN
