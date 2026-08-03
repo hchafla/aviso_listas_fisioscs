@@ -1,844 +1,1193 @@
-{
-  "metadata": {
-    "ultima_actualizacion": "2026-08-03T13:15:38Z",
-    "categoria": "Fisioterapia",
-    "fuente": "Servicio Canario de la Salud (SCS)"
-  },
-  "estado_actual": {
-    "por_gerencia": {
-      "El Hierro": {
-        "numero_gerencia": 9,
-        "numero_general": null,
-        "lista": "Ordinaria",
-        "tipo_nombramiento": "Corta duración",
-        "fecha_hora": "2026-06-23T12:23:02Z"
+[
+  {
+    "gerencia_id": "DR._NEGRÍN",
+    "nombre_gerencia": "Dr. Negrín",
+    "fecha_ultimo_llamamiento": "2026-07-31 09:15:42",
+    "dias_desde_ultimo_llamamiento": -206,
+    "clasificacion_actividad": "Muy activa",
+    "actualizaciones_ultimos_30_dias": 47,
+    "dias_activos_ultimos_30_dias": 10,
+    "consulta_personalizada": {
+      "ultimos_7_dias": {
+        "total_actualizaciones": 47,
+        "dias_con_actividad": 10,
+        "porcentaje_dias": 142.86,
+        "ultima_fecha": "2026-07-31"
       },
-      "La Palma": {
-        "numero_gerencia": 381,
-        "numero_general": null,
-        "lista": "Ordinaria",
-        "tipo_nombramiento": "Corta duración",
-        "fecha_hora": "2026-07-10T13:31:04Z"
+      "ultimos_15_dias": {
+        "total_actualizaciones": 47,
+        "dias_con_actividad": 10,
+        "porcentaje_dias": 66.67,
+        "ultima_fecha": "2026-07-31"
       },
-      "La Gomera": {
-        "numero_gerencia": 199,
-        "numero_general": null,
-        "lista": "Ordinaria",
-        "tipo_nombramiento": "Corta duración",
-        "fecha_hora": "2026-07-21T15:00:57Z"
+      "ultimos_30_dias": {
+        "total_actualizaciones": 47,
+        "dias_con_actividad": 10,
+        "porcentaje_dias": 33.33,
+        "ultima_fecha": "2026-07-31"
       },
-      "Atención Primaria Tenerife": {
-        "numero_gerencia": 317,
-        "numero_general": null,
-        "lista": "Ordinaria",
-        "tipo_nombramiento": "Corta duración",
-        "fecha_hora": "2026-07-28T15:30:56Z"
+      "ultimos_90_dias": {
+        "total_actualizaciones": 47,
+        "dias_con_actividad": 10,
+        "porcentaje_dias": 11.11,
+        "ultima_fecha": "2026-07-31"
       },
-      "CHUIMI": {
-        "numero_gerencia": 241,
-        "numero_general": null,
-        "lista": "Ordinaria",
-        "tipo_nombramiento": "Corta duración",
-        "fecha_hora": "2026-07-29T14:45:41Z"
+      "ultimos_180_dias": {
+        "total_actualizaciones": 47,
+        "dias_con_actividad": 10,
+        "porcentaje_dias": 5.56,
+        "ultima_fecha": "2026-07-31"
       },
-      "Lanzarote": {
-        "numero_gerencia": 140,
-        "numero_general": null,
-        "lista": "Ordinaria",
-        "tipo_nombramiento": "Corta duración",
-        "fecha_hora": "2026-07-30T18:15:39Z"
-      },
-      "Fuerteventura": {
-        "numero_gerencia": 167,
-        "numero_general": null,
-        "lista": "Ordinaria",
-        "tipo_nombramiento": "Corta duración",
-        "fecha_hora": "2026-07-31T09:15:35Z"
-      },
-      "Dr. Negrín": {
-        "numero_gerencia": 125,
-        "numero_general": null,
-        "lista": "Ordinaria",
-        "tipo_nombramiento": "Corta duración",
-        "fecha_hora": "2026-07-31T09:15:42Z"
-      },
-      "Candelaria": {
-        "numero_gerencia": 603,
-        "numero_general": null,
-        "lista": "Ordinaria",
-        "tipo_nombramiento": "Corta duración",
-        "fecha_hora": "2026-07-31T10:00:53Z"
-      },
-      "Atención Primaria Gran Canaria": {
-        "numero_gerencia": 204,
-        "numero_general": null,
-        "lista": "Ordinaria",
-        "tipo_nombramiento": "Corta duración",
-        "fecha_hora": "2026-08-03T13:15:38Z"
+      "historico_completo": {
+        "total_actualizaciones": 47,
+        "dias_con_actividad": 10,
+        "porcentaje_dias": 19.23,
+        "ultima_fecha": "2026-07-31"
       }
     },
-    "ranking": [
+    "heatmap_diario": {
+      "2026-06-09": 1,
+      "2026-07-03": 1,
+      "2026-07-07": 3,
+      "2026-07-14": 1,
+      "2026-07-16": 1,
+      "2026-07-23": 6,
+      "2026-07-24": 8,
+      "2026-07-27": 3,
+      "2026-07-28": 22,
+      "2026-07-31": 1
+    },
+    "histograma": [
       {
-        "gerencia": "Candelaria",
-        "ultimo_numero": 603,
-        "fecha_hora": "2026-07-31T10:00:53Z",
-        "total_cambios_historico": 19
+        "intervalo": "1",
+        "frecuencia": 5
       },
       {
-        "gerencia": "La Palma",
-        "ultimo_numero": 381,
-        "fecha_hora": "2026-07-10T13:31:04Z",
-        "total_cambios_historico": 13
+        "intervalo": "3",
+        "frecuencia": 2
       },
       {
-        "gerencia": "Atención Primaria Tenerife",
-        "ultimo_numero": 317,
-        "fecha_hora": "2026-07-28T15:30:56Z",
-        "total_cambios_historico": 25
+        "intervalo": "6",
+        "frecuencia": 1
       },
       {
-        "gerencia": "CHUIMI",
-        "ultimo_numero": 241,
-        "fecha_hora": "2026-07-29T14:45:41Z",
-        "total_cambios_historico": 19
+        "intervalo": "8",
+        "frecuencia": 1
       },
       {
-        "gerencia": "Atención Primaria Gran Canaria",
-        "ultimo_numero": 204,
-        "fecha_hora": "2026-08-03T13:15:38Z",
-        "total_cambios_historico": 25
-      },
-      {
-        "gerencia": "La Gomera",
-        "ultimo_numero": 199,
-        "fecha_hora": "2026-07-21T15:00:57Z",
-        "total_cambios_historico": 9
-      },
-      {
-        "gerencia": "Fuerteventura",
-        "ultimo_numero": 167,
-        "fecha_hora": "2026-07-31T09:15:35Z",
-        "total_cambios_historico": 27
-      },
-      {
-        "gerencia": "Lanzarote",
-        "ultimo_numero": 140,
-        "fecha_hora": "2026-07-30T18:15:39Z",
-        "total_cambios_historico": 12
-      },
-      {
-        "gerencia": "Dr. Negrín",
-        "ultimo_numero": 125,
-        "fecha_hora": "2026-07-31T09:15:42Z",
-        "total_cambios_historico": 47
-      },
-      {
-        "gerencia": "El Hierro",
-        "ultimo_numero": 9,
-        "fecha_hora": "2026-06-23T12:23:02Z",
-        "total_cambios_historico": 5
+        "intervalo": "22",
+        "frecuencia": 1
       }
-    ]
-  },
-  "analisis_temporal": {
-    "metricas_historicas": {
-      "total_cambios": 201,
-      "maximo_por_gerencia": {
-        "Atención Primaria Gran Canaria": 227,
-        "Atención Primaria Tenerife": 412,
-        "CHUIMI": 241,
-        "Candelaria": 627,
-        "Dr. Negrín": 272,
-        "El Hierro": 121,
-        "Fuerteventura": 256,
-        "La Gomera": 199,
-        "La Palma": 381,
-        "Lanzarote": 187
+    ],
+    "evolucion_temporal": [
+      {
+        "fecha": "2026-06-09",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-07-03",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-07-07",
+        "actualizaciones": 3
+      },
+      {
+        "fecha": "2026-07-14",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-07-16",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-07-23",
+        "actualizaciones": 6
+      },
+      {
+        "fecha": "2026-07-24",
+        "actualizaciones": 8
+      },
+      {
+        "fecha": "2026-07-27",
+        "actualizaciones": 3
+      },
+      {
+        "fecha": "2026-07-28",
+        "actualizaciones": 22
+      },
+      {
+        "fecha": "2026-07-31",
+        "actualizaciones": 1
       }
+    ],
+    "records": {
+      "mayor_numero_alcanzado_en_dia": 22,
+      "mes_con_mas_actividad": "2026-07",
+      "anio_con_mas_actividad": 2026,
+      "dia_con_mas_cambios": "2026-07-28"
     }
   },
-  "consulta_usuario": {
-    "nota": "Estructura preparada para consultas de umbrales en frontend."
-  },
-  "evolucion_temporal": [
-    {
-      "fecha": "2026-06-09",
-      "gerencia": "Dr. Negrín",
-      "numero_gerencia": 129,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-06-10",
-      "gerencia": "Candelaria",
-      "numero_gerencia": 471,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-06-10",
-      "gerencia": "La Palma",
-      "numero_gerencia": 368,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-06-11",
-      "gerencia": "Fuerteventura",
-      "numero_gerencia": 108,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-06-11",
-      "gerencia": "La Palma",
-      "numero_gerencia": 371,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-06-12",
-      "gerencia": "Candelaria",
-      "numero_gerencia": 614,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-06-12",
-      "gerencia": "Fuerteventura",
-      "numero_gerencia": 248,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-06-15",
-      "gerencia": "CHUIMI",
-      "numero_gerencia": 176,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-06-15",
-      "gerencia": "Candelaria",
-      "numero_gerencia": 627,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-06-15",
-      "gerencia": "Lanzarote",
-      "numero_gerencia": 125,
-      "tipo_nombramiento": "Interinidad en plaza vacante",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-06-16",
-      "gerencia": "La Palma",
-      "numero_gerencia": 373,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-06-16",
-      "gerencia": "Lanzarote",
-      "numero_gerencia": 152,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-06-18",
-      "gerencia": "Atención Primaria Gran Canaria",
-      "numero_gerencia": 68,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-06-18",
-      "gerencia": "CHUIMI",
-      "numero_gerencia": 170,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-06-18",
-      "gerencia": "El Hierro",
-      "numero_gerencia": 120,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-06-19",
-      "gerencia": "Candelaria",
-      "numero_gerencia": 577,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-06-19",
-      "gerencia": "Fuerteventura",
-      "numero_gerencia": 186,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-06-19",
-      "gerencia": "Lanzarote",
-      "numero_gerencia": 159,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-06-22",
-      "gerencia": "CHUIMI",
-      "numero_gerencia": 169,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-06-22",
-      "gerencia": "El Hierro",
-      "numero_gerencia": 121,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-06-22",
-      "gerencia": "El Hierro",
-      "numero_gerencia": 69,
-      "tipo_nombramiento": "Interinidad en plaza vacante",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-06-22",
-      "gerencia": "El Hierro",
-      "numero_gerencia": 69,
-      "tipo_nombramiento": "Larga duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-06-22",
-      "gerencia": "Fuerteventura",
-      "numero_gerencia": 256,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-06-22",
-      "gerencia": "Fuerteventura",
-      "numero_gerencia": 14,
-      "tipo_nombramiento": "Interinidad en plaza vacante",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-06-22",
-      "gerencia": "La Gomera",
-      "numero_gerencia": 161,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-06-22",
-      "gerencia": "La Palma",
-      "numero_gerencia": 100,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-06-23",
-      "gerencia": "Atención Primaria Gran Canaria",
-      "numero_gerencia": 72,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-06-23",
-      "gerencia": "Atención Primaria Tenerife",
-      "numero_gerencia": 219,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-06-23",
-      "gerencia": "El Hierro",
-      "numero_gerencia": 9,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-06-24",
-      "gerencia": "Atención Primaria Tenerife",
-      "numero_gerencia": 295,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-06-24",
-      "gerencia": "Fuerteventura",
-      "numero_gerencia": 38,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-06-24",
-      "gerencia": "Fuerteventura",
-      "numero_gerencia": 39,
-      "tipo_nombramiento": "Larga duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-06-26",
-      "gerencia": "Atención Primaria Gran Canaria",
-      "numero_gerencia": 81,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-06-26",
-      "gerencia": "CHUIMI",
-      "numero_gerencia": 191,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-06-26",
-      "gerencia": "Fuerteventura",
-      "numero_gerencia": 248,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-06-29",
-      "gerencia": "Atención Primaria Gran Canaria",
-      "numero_gerencia": 92,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-06-29",
-      "gerencia": "CHUIMI",
-      "numero_gerencia": 193,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-06-29",
-      "gerencia": "Candelaria",
-      "numero_gerencia": 450,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-06-30",
-      "gerencia": "Fuerteventura",
-      "numero_gerencia": 108,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-06-30",
-      "gerencia": "Lanzarote",
-      "numero_gerencia": 168,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-02",
-      "gerencia": "Atención Primaria Tenerife",
-      "numero_gerencia": 317,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-02",
-      "gerencia": "La Gomera",
-      "numero_gerencia": 83,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-02",
-      "gerencia": "La Palma",
-      "numero_gerencia": 373,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-03",
-      "gerencia": "Atención Primaria Gran Canaria",
-      "numero_gerencia": 95,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-03",
-      "gerencia": "Candelaria",
-      "numero_gerencia": 603,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-03",
-      "gerencia": "Dr. Negrín",
-      "numero_gerencia": 125,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-06",
-      "gerencia": "Atención Primaria Gran Canaria",
-      "numero_gerencia": 204,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-06",
-      "gerencia": "Atención Primaria Tenerife",
-      "numero_gerencia": 396,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-06",
-      "gerencia": "Fuerteventura",
-      "numero_gerencia": 222,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-07",
-      "gerencia": "Atención Primaria Gran Canaria",
-      "numero_gerencia": 92,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-07",
-      "gerencia": "Atención Primaria Tenerife",
-      "numero_gerencia": 398,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-07",
-      "gerencia": "CHUIMI",
-      "numero_gerencia": 231,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-07",
-      "gerencia": "Dr. Negrín",
-      "numero_gerencia": 172,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-07",
-      "gerencia": "Lanzarote",
-      "numero_gerencia": 140,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-08",
-      "gerencia": "Atención Primaria Tenerife",
-      "numero_gerencia": 408,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-08",
-      "gerencia": "CHUIMI",
-      "numero_gerencia": 65,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-08",
-      "gerencia": "La Palma",
-      "numero_gerencia": 374,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-09",
-      "gerencia": "Atención Primaria Tenerife",
-      "numero_gerencia": 412,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-09",
-      "gerencia": "La Palma",
-      "numero_gerencia": 379,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-10",
-      "gerencia": "Fuerteventura",
-      "numero_gerencia": 256,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-10",
-      "gerencia": "La Gomera",
-      "numero_gerencia": 185,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-10",
-      "gerencia": "La Palma",
-      "numero_gerencia": 381,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-13",
-      "gerencia": "Atención Primaria Gran Canaria",
-      "numero_gerencia": 95,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-13",
-      "gerencia": "CHUIMI",
-      "numero_gerencia": 233,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-14",
-      "gerencia": "Dr. Negrín",
-      "numero_gerencia": 104,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-15",
-      "gerencia": "Atención Primaria Gran Canaria",
-      "numero_gerencia": 204,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-15",
-      "gerencia": "Candelaria",
-      "numero_gerencia": 577,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-16",
-      "gerencia": "Dr. Negrín",
-      "numero_gerencia": 115,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-16",
-      "gerencia": "Fuerteventura",
-      "numero_gerencia": 108,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-17",
-      "gerencia": "Atención Primaria Gran Canaria",
-      "numero_gerencia": 95,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-20",
-      "gerencia": "Candelaria",
-      "numero_gerencia": 603,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-20",
-      "gerencia": "Fuerteventura",
-      "numero_gerencia": 188,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-21",
-      "gerencia": "La Gomera",
-      "numero_gerencia": 199,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-22",
-      "gerencia": "Fuerteventura",
-      "numero_gerencia": 218,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-23",
-      "gerencia": "CHUIMI",
-      "numero_gerencia": 192,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-23",
-      "gerencia": "Dr. Negrín",
-      "numero_gerencia": 192,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-23",
-      "gerencia": "Fuerteventura",
-      "numero_gerencia": 222,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-23",
-      "gerencia": "Lanzarote",
-      "numero_gerencia": 187,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-24",
-      "gerencia": "Candelaria",
-      "numero_gerencia": 606,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-24",
-      "gerencia": "Dr. Negrín",
-      "numero_gerencia": 229,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-27",
-      "gerencia": "Atención Primaria Gran Canaria",
-      "numero_gerencia": 95,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-27",
-      "gerencia": "Candelaria",
-      "numero_gerencia": 434,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-27",
-      "gerencia": "Dr. Negrín",
-      "numero_gerencia": 232,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-28",
-      "gerencia": "Atención Primaria Tenerife",
-      "numero_gerencia": 317,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-28",
-      "gerencia": "CHUIMI",
-      "numero_gerencia": 236,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-28",
-      "gerencia": "Candelaria",
-      "numero_gerencia": 614,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-28",
-      "gerencia": "Dr. Negrín",
-      "numero_gerencia": 272,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-28",
-      "gerencia": "Fuerteventura",
-      "numero_gerencia": 256,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-29",
-      "gerencia": "Atención Primaria Gran Canaria",
-      "numero_gerencia": 81,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-29",
-      "gerencia": "CHUIMI",
-      "numero_gerencia": 241,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-29",
-      "gerencia": "Candelaria",
-      "numero_gerencia": 414,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-30",
-      "gerencia": "Atención Primaria Gran Canaria",
-      "numero_gerencia": 227,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-30",
-      "gerencia": "Lanzarote",
-      "numero_gerencia": 140,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-31",
-      "gerencia": "Candelaria",
-      "numero_gerencia": 603,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-31",
-      "gerencia": "Dr. Negrín",
-      "numero_gerencia": 125,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-07-31",
-      "gerencia": "Fuerteventura",
-      "numero_gerencia": 167,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
-    },
-    {
-      "fecha": "2026-08-03",
-      "gerencia": "Atención Primaria Gran Canaria",
-      "numero_gerencia": 204,
-      "tipo_nombramiento": "Corta duración",
-      "lista": "Ordinaria"
+  {
+    "gerencia_id": "CANDELARIA",
+    "nombre_gerencia": "Candelaria",
+    "fecha_ultimo_llamamiento": "2026-07-31 10:00:53",
+    "dias_desde_ultimo_llamamiento": -206,
+    "clasificacion_actividad": "Muy activa",
+    "actualizaciones_ultimos_30_dias": 19,
+    "dias_activos_ultimos_30_dias": 13,
+    "consulta_personalizada": {
+      "ultimos_7_dias": {
+        "total_actualizaciones": 19,
+        "dias_con_actividad": 13,
+        "porcentaje_dias": 185.71,
+        "ultima_fecha": "2026-07-31"
+      },
+      "ultimos_15_dias": {
+        "total_actualizaciones": 19,
+        "dias_con_actividad": 13,
+        "porcentaje_dias": 86.67,
+        "ultima_fecha": "2026-07-31"
+      },
+      "ultimos_30_dias": {
+        "total_actualizaciones": 19,
+        "dias_con_actividad": 13,
+        "porcentaje_dias": 43.33,
+        "ultima_fecha": "2026-07-31"
+      },
+      "ultimos_90_dias": {
+        "total_actualizaciones": 19,
+        "dias_con_actividad": 13,
+        "porcentaje_dias": 14.44,
+        "ultima_fecha": "2026-07-31"
+      },
+      "ultimos_180_dias": {
+        "total_actualizaciones": 19,
+        "dias_con_actividad": 13,
+        "porcentaje_dias": 7.22,
+        "ultima_fecha": "2026-07-31"
+      },
+      "historico_completo": {
+        "total_actualizaciones": 19,
+        "dias_con_actividad": 13,
+        "porcentaje_dias": 25.49,
+        "ultima_fecha": "2026-07-31"
+      }
+    },
+    "heatmap_diario": {
+      "2026-06-10": 1,
+      "2026-06-12": 1,
+      "2026-06-15": 1,
+      "2026-06-19": 1,
+      "2026-06-29": 1,
+      "2026-07-03": 4,
+      "2026-07-15": 2,
+      "2026-07-20": 1,
+      "2026-07-24": 1,
+      "2026-07-27": 2,
+      "2026-07-28": 2,
+      "2026-07-29": 1,
+      "2026-07-31": 1
+    },
+    "histograma": [
+      {
+        "intervalo": "1",
+        "frecuencia": 9
+      },
+      {
+        "intervalo": "2",
+        "frecuencia": 3
+      },
+      {
+        "intervalo": "4",
+        "frecuencia": 1
+      }
+    ],
+    "evolucion_temporal": [
+      {
+        "fecha": "2026-06-10",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-06-12",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-06-15",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-06-19",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-06-29",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-07-03",
+        "actualizaciones": 4
+      },
+      {
+        "fecha": "2026-07-15",
+        "actualizaciones": 2
+      },
+      {
+        "fecha": "2026-07-20",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-07-24",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-07-27",
+        "actualizaciones": 2
+      },
+      {
+        "fecha": "2026-07-28",
+        "actualizaciones": 2
+      },
+      {
+        "fecha": "2026-07-29",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-07-31",
+        "actualizaciones": 1
+      }
+    ],
+    "records": {
+      "mayor_numero_alcanzado_en_dia": 4,
+      "mes_con_mas_actividad": "2026-07",
+      "anio_con_mas_actividad": 2026,
+      "dia_con_mas_cambios": "2026-07-03"
     }
-  ]
-}
+  },
+  {
+    "gerencia_id": "LA_PALMA",
+    "nombre_gerencia": "La Palma",
+    "fecha_ultimo_llamamiento": "2026-07-10 13:31:04",
+    "dias_desde_ultimo_llamamiento": -185,
+    "clasificacion_actividad": "Muy activa",
+    "actualizaciones_ultimos_30_dias": 13,
+    "dias_activos_ultimos_30_dias": 8,
+    "consulta_personalizada": {
+      "ultimos_7_dias": {
+        "total_actualizaciones": 13,
+        "dias_con_actividad": 8,
+        "porcentaje_dias": 114.29,
+        "ultima_fecha": "2026-07-10"
+      },
+      "ultimos_15_dias": {
+        "total_actualizaciones": 13,
+        "dias_con_actividad": 8,
+        "porcentaje_dias": 53.33,
+        "ultima_fecha": "2026-07-10"
+      },
+      "ultimos_30_dias": {
+        "total_actualizaciones": 13,
+        "dias_con_actividad": 8,
+        "porcentaje_dias": 26.67,
+        "ultima_fecha": "2026-07-10"
+      },
+      "ultimos_90_dias": {
+        "total_actualizaciones": 13,
+        "dias_con_actividad": 8,
+        "porcentaje_dias": 8.89,
+        "ultima_fecha": "2026-07-10"
+      },
+      "ultimos_180_dias": {
+        "total_actualizaciones": 13,
+        "dias_con_actividad": 8,
+        "porcentaje_dias": 4.44,
+        "ultima_fecha": "2026-07-10"
+      },
+      "historico_completo": {
+        "total_actualizaciones": 13,
+        "dias_con_actividad": 8,
+        "porcentaje_dias": 25.81,
+        "ultima_fecha": "2026-07-10"
+      }
+    },
+    "heatmap_diario": {
+      "2026-06-10": 1,
+      "2026-06-11": 1,
+      "2026-06-16": 1,
+      "2026-06-22": 1,
+      "2026-07-02": 1,
+      "2026-07-08": 1,
+      "2026-07-09": 5,
+      "2026-07-10": 2
+    },
+    "histograma": [
+      {
+        "intervalo": "1",
+        "frecuencia": 6
+      },
+      {
+        "intervalo": "2",
+        "frecuencia": 1
+      },
+      {
+        "intervalo": "5",
+        "frecuencia": 1
+      }
+    ],
+    "evolucion_temporal": [
+      {
+        "fecha": "2026-06-10",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-06-11",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-06-16",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-06-22",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-07-02",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-07-08",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-07-09",
+        "actualizaciones": 5
+      },
+      {
+        "fecha": "2026-07-10",
+        "actualizaciones": 2
+      }
+    ],
+    "records": {
+      "mayor_numero_alcanzado_en_dia": 5,
+      "mes_con_mas_actividad": "2026-07",
+      "anio_con_mas_actividad": 2026,
+      "dia_con_mas_cambios": "2026-07-09"
+    }
+  },
+  {
+    "gerencia_id": "FUERTEVENTURA",
+    "nombre_gerencia": "Fuerteventura",
+    "fecha_ultimo_llamamiento": "2026-07-31 09:15:35",
+    "dias_desde_ultimo_llamamiento": -206,
+    "clasificacion_actividad": "Muy activa",
+    "actualizaciones_ultimos_30_dias": 27,
+    "dias_activos_ultimos_30_dias": 15,
+    "consulta_personalizada": {
+      "ultimos_7_dias": {
+        "total_actualizaciones": 27,
+        "dias_con_actividad": 15,
+        "porcentaje_dias": 214.29,
+        "ultima_fecha": "2026-07-31"
+      },
+      "ultimos_15_dias": {
+        "total_actualizaciones": 27,
+        "dias_con_actividad": 15,
+        "porcentaje_dias": 100.0,
+        "ultima_fecha": "2026-07-31"
+      },
+      "ultimos_30_dias": {
+        "total_actualizaciones": 27,
+        "dias_con_actividad": 15,
+        "porcentaje_dias": 50.0,
+        "ultima_fecha": "2026-07-31"
+      },
+      "ultimos_90_dias": {
+        "total_actualizaciones": 27,
+        "dias_con_actividad": 15,
+        "porcentaje_dias": 16.67,
+        "ultima_fecha": "2026-07-31"
+      },
+      "ultimos_180_dias": {
+        "total_actualizaciones": 27,
+        "dias_con_actividad": 15,
+        "porcentaje_dias": 8.33,
+        "ultima_fecha": "2026-07-31"
+      },
+      "historico_completo": {
+        "total_actualizaciones": 27,
+        "dias_con_actividad": 15,
+        "porcentaje_dias": 29.41,
+        "ultima_fecha": "2026-07-31"
+      }
+    },
+    "heatmap_diario": {
+      "2026-06-11": 1,
+      "2026-06-12": 1,
+      "2026-06-19": 1,
+      "2026-06-22": 2,
+      "2026-06-24": 2,
+      "2026-06-26": 1,
+      "2026-06-30": 1,
+      "2026-07-06": 2,
+      "2026-07-10": 4,
+      "2026-07-16": 1,
+      "2026-07-20": 1,
+      "2026-07-22": 5,
+      "2026-07-23": 1,
+      "2026-07-28": 3,
+      "2026-07-31": 1
+    },
+    "histograma": [
+      {
+        "intervalo": "1",
+        "frecuencia": 9
+      },
+      {
+        "intervalo": "2",
+        "frecuencia": 3
+      },
+      {
+        "intervalo": "3",
+        "frecuencia": 1
+      },
+      {
+        "intervalo": "4",
+        "frecuencia": 1
+      },
+      {
+        "intervalo": "5",
+        "frecuencia": 1
+      }
+    ],
+    "evolucion_temporal": [
+      {
+        "fecha": "2026-06-11",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-06-12",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-06-19",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-06-22",
+        "actualizaciones": 2
+      },
+      {
+        "fecha": "2026-06-24",
+        "actualizaciones": 2
+      },
+      {
+        "fecha": "2026-06-26",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-06-30",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-07-06",
+        "actualizaciones": 2
+      },
+      {
+        "fecha": "2026-07-10",
+        "actualizaciones": 4
+      },
+      {
+        "fecha": "2026-07-16",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-07-20",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-07-22",
+        "actualizaciones": 5
+      },
+      {
+        "fecha": "2026-07-23",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-07-28",
+        "actualizaciones": 3
+      },
+      {
+        "fecha": "2026-07-31",
+        "actualizaciones": 1
+      }
+    ],
+    "records": {
+      "mayor_numero_alcanzado_en_dia": 5,
+      "mes_con_mas_actividad": "2026-07",
+      "anio_con_mas_actividad": 2026,
+      "dia_con_mas_cambios": "2026-07-22"
+    }
+  },
+  {
+    "gerencia_id": "LANZAROTE",
+    "nombre_gerencia": "Lanzarote",
+    "fecha_ultimo_llamamiento": "2026-07-30 18:15:39",
+    "dias_desde_ultimo_llamamiento": -205,
+    "clasificacion_actividad": "Muy activa",
+    "actualizaciones_ultimos_30_dias": 12,
+    "dias_activos_ultimos_30_dias": 7,
+    "consulta_personalizada": {
+      "ultimos_7_dias": {
+        "total_actualizaciones": 12,
+        "dias_con_actividad": 7,
+        "porcentaje_dias": 100.0,
+        "ultima_fecha": "2026-07-30"
+      },
+      "ultimos_15_dias": {
+        "total_actualizaciones": 12,
+        "dias_con_actividad": 7,
+        "porcentaje_dias": 46.67,
+        "ultima_fecha": "2026-07-30"
+      },
+      "ultimos_30_dias": {
+        "total_actualizaciones": 12,
+        "dias_con_actividad": 7,
+        "porcentaje_dias": 23.33,
+        "ultima_fecha": "2026-07-30"
+      },
+      "ultimos_90_dias": {
+        "total_actualizaciones": 12,
+        "dias_con_actividad": 7,
+        "porcentaje_dias": 7.78,
+        "ultima_fecha": "2026-07-30"
+      },
+      "ultimos_180_dias": {
+        "total_actualizaciones": 12,
+        "dias_con_actividad": 7,
+        "porcentaje_dias": 3.89,
+        "ultima_fecha": "2026-07-30"
+      },
+      "historico_completo": {
+        "total_actualizaciones": 12,
+        "dias_con_actividad": 7,
+        "porcentaje_dias": 15.22,
+        "ultima_fecha": "2026-07-30"
+      }
+    },
+    "heatmap_diario": {
+      "2026-06-15": 1,
+      "2026-06-16": 1,
+      "2026-06-19": 1,
+      "2026-06-30": 1,
+      "2026-07-07": 1,
+      "2026-07-23": 6,
+      "2026-07-30": 1
+    },
+    "histograma": [
+      {
+        "intervalo": "1",
+        "frecuencia": 6
+      },
+      {
+        "intervalo": "6",
+        "frecuencia": 1
+      }
+    ],
+    "evolucion_temporal": [
+      {
+        "fecha": "2026-06-15",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-06-16",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-06-19",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-06-30",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-07-07",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-07-23",
+        "actualizaciones": 6
+      },
+      {
+        "fecha": "2026-07-30",
+        "actualizaciones": 1
+      }
+    ],
+    "records": {
+      "mayor_numero_alcanzado_en_dia": 6,
+      "mes_con_mas_actividad": "2026-07",
+      "anio_con_mas_actividad": 2026,
+      "dia_con_mas_cambios": "2026-07-23"
+    }
+  },
+  {
+    "gerencia_id": "CHUIMI",
+    "nombre_gerencia": "CHUIMI",
+    "fecha_ultimo_llamamiento": "2026-07-29 14:45:41",
+    "dias_desde_ultimo_llamamiento": -204,
+    "clasificacion_actividad": "Muy activa",
+    "actualizaciones_ultimos_30_dias": 19,
+    "dias_activos_ultimos_30_dias": 11,
+    "consulta_personalizada": {
+      "ultimos_7_dias": {
+        "total_actualizaciones": 19,
+        "dias_con_actividad": 11,
+        "porcentaje_dias": 157.14,
+        "ultima_fecha": "2026-07-29"
+      },
+      "ultimos_15_dias": {
+        "total_actualizaciones": 19,
+        "dias_con_actividad": 11,
+        "porcentaje_dias": 73.33,
+        "ultima_fecha": "2026-07-29"
+      },
+      "ultimos_30_dias": {
+        "total_actualizaciones": 19,
+        "dias_con_actividad": 11,
+        "porcentaje_dias": 36.67,
+        "ultima_fecha": "2026-07-29"
+      },
+      "ultimos_90_dias": {
+        "total_actualizaciones": 19,
+        "dias_con_actividad": 11,
+        "porcentaje_dias": 12.22,
+        "ultima_fecha": "2026-07-29"
+      },
+      "ultimos_180_dias": {
+        "total_actualizaciones": 19,
+        "dias_con_actividad": 11,
+        "porcentaje_dias": 6.11,
+        "ultima_fecha": "2026-07-29"
+      },
+      "historico_completo": {
+        "total_actualizaciones": 19,
+        "dias_con_actividad": 11,
+        "porcentaje_dias": 25.0,
+        "ultima_fecha": "2026-07-29"
+      }
+    },
+    "heatmap_diario": {
+      "2026-06-15": 1,
+      "2026-06-18": 1,
+      "2026-06-22": 1,
+      "2026-06-26": 1,
+      "2026-06-29": 1,
+      "2026-07-07": 7,
+      "2026-07-08": 1,
+      "2026-07-13": 2,
+      "2026-07-23": 1,
+      "2026-07-28": 1,
+      "2026-07-29": 2
+    },
+    "histograma": [
+      {
+        "intervalo": "1",
+        "frecuencia": 8
+      },
+      {
+        "intervalo": "2",
+        "frecuencia": 2
+      },
+      {
+        "intervalo": "7",
+        "frecuencia": 1
+      }
+    ],
+    "evolucion_temporal": [
+      {
+        "fecha": "2026-06-15",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-06-18",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-06-22",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-06-26",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-06-29",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-07-07",
+        "actualizaciones": 7
+      },
+      {
+        "fecha": "2026-07-08",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-07-13",
+        "actualizaciones": 2
+      },
+      {
+        "fecha": "2026-07-23",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-07-28",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-07-29",
+        "actualizaciones": 2
+      }
+    ],
+    "records": {
+      "mayor_numero_alcanzado_en_dia": 7,
+      "mes_con_mas_actividad": "2026-07",
+      "anio_con_mas_actividad": 2026,
+      "dia_con_mas_cambios": "2026-07-07"
+    }
+  },
+  {
+    "gerencia_id": "EL_HIERRO",
+    "nombre_gerencia": "El Hierro",
+    "fecha_ultimo_llamamiento": "2026-06-23 12:23:02",
+    "dias_desde_ultimo_llamamiento": -168,
+    "clasificacion_actividad": "Media",
+    "actualizaciones_ultimos_30_dias": 5,
+    "dias_activos_ultimos_30_dias": 3,
+    "consulta_personalizada": {
+      "ultimos_7_dias": {
+        "total_actualizaciones": 5,
+        "dias_con_actividad": 3,
+        "porcentaje_dias": 42.86,
+        "ultima_fecha": "2026-06-23"
+      },
+      "ultimos_15_dias": {
+        "total_actualizaciones": 5,
+        "dias_con_actividad": 3,
+        "porcentaje_dias": 20.0,
+        "ultima_fecha": "2026-06-23"
+      },
+      "ultimos_30_dias": {
+        "total_actualizaciones": 5,
+        "dias_con_actividad": 3,
+        "porcentaje_dias": 10.0,
+        "ultima_fecha": "2026-06-23"
+      },
+      "ultimos_90_dias": {
+        "total_actualizaciones": 5,
+        "dias_con_actividad": 3,
+        "porcentaje_dias": 3.33,
+        "ultima_fecha": "2026-06-23"
+      },
+      "ultimos_180_dias": {
+        "total_actualizaciones": 5,
+        "dias_con_actividad": 3,
+        "porcentaje_dias": 1.67,
+        "ultima_fecha": "2026-06-23"
+      },
+      "historico_completo": {
+        "total_actualizaciones": 5,
+        "dias_con_actividad": 3,
+        "porcentaje_dias": 60.0,
+        "ultima_fecha": "2026-06-23"
+      }
+    },
+    "heatmap_diario": {
+      "2026-06-18": 1,
+      "2026-06-22": 3,
+      "2026-06-23": 1
+    },
+    "histograma": [
+      {
+        "intervalo": "1",
+        "frecuencia": 2
+      },
+      {
+        "intervalo": "3",
+        "frecuencia": 1
+      }
+    ],
+    "evolucion_temporal": [
+      {
+        "fecha": "2026-06-18",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-06-22",
+        "actualizaciones": 3
+      },
+      {
+        "fecha": "2026-06-23",
+        "actualizaciones": 1
+      }
+    ],
+    "records": {
+      "mayor_numero_alcanzado_en_dia": 3,
+      "mes_con_mas_actividad": "2026-06",
+      "anio_con_mas_actividad": 2026,
+      "dia_con_mas_cambios": "2026-06-22"
+    }
+  },
+  {
+    "gerencia_id": "ATENCIÓN_PRIMARIA_GRAN_CANARIA",
+    "nombre_gerencia": "Atención Primaria Gran Canaria",
+    "fecha_ultimo_llamamiento": "2026-08-03 13:15:38",
+    "dias_desde_ultimo_llamamiento": -209,
+    "clasificacion_actividad": "Muy activa",
+    "actualizaciones_ultimos_30_dias": 25,
+    "dias_activos_ultimos_30_dias": 14,
+    "consulta_personalizada": {
+      "ultimos_7_dias": {
+        "total_actualizaciones": 25,
+        "dias_con_actividad": 14,
+        "porcentaje_dias": 200.0,
+        "ultima_fecha": "2026-08-03"
+      },
+      "ultimos_15_dias": {
+        "total_actualizaciones": 25,
+        "dias_con_actividad": 14,
+        "porcentaje_dias": 93.33,
+        "ultima_fecha": "2026-08-03"
+      },
+      "ultimos_30_dias": {
+        "total_actualizaciones": 25,
+        "dias_con_actividad": 14,
+        "porcentaje_dias": 46.67,
+        "ultima_fecha": "2026-08-03"
+      },
+      "ultimos_90_dias": {
+        "total_actualizaciones": 25,
+        "dias_con_actividad": 14,
+        "porcentaje_dias": 15.56,
+        "ultima_fecha": "2026-08-03"
+      },
+      "ultimos_180_dias": {
+        "total_actualizaciones": 25,
+        "dias_con_actividad": 14,
+        "porcentaje_dias": 7.78,
+        "ultima_fecha": "2026-08-03"
+      },
+      "historico_completo": {
+        "total_actualizaciones": 25,
+        "dias_con_actividad": 14,
+        "porcentaje_dias": 30.43,
+        "ultima_fecha": "2026-08-03"
+      }
+    },
+    "heatmap_diario": {
+      "2026-06-18": 1,
+      "2026-06-23": 1,
+      "2026-06-26": 1,
+      "2026-06-29": 2,
+      "2026-07-03": 1,
+      "2026-07-06": 9,
+      "2026-07-07": 1,
+      "2026-07-13": 1,
+      "2026-07-15": 1,
+      "2026-07-17": 1,
+      "2026-07-27": 3,
+      "2026-07-29": 1,
+      "2026-07-30": 1,
+      "2026-08-03": 1
+    },
+    "histograma": [
+      {
+        "intervalo": "1",
+        "frecuencia": 11
+      },
+      {
+        "intervalo": "2",
+        "frecuencia": 1
+      },
+      {
+        "intervalo": "3",
+        "frecuencia": 1
+      },
+      {
+        "intervalo": "9",
+        "frecuencia": 1
+      }
+    ],
+    "evolucion_temporal": [
+      {
+        "fecha": "2026-06-18",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-06-23",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-06-26",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-06-29",
+        "actualizaciones": 2
+      },
+      {
+        "fecha": "2026-07-03",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-07-06",
+        "actualizaciones": 9
+      },
+      {
+        "fecha": "2026-07-07",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-07-13",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-07-15",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-07-17",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-07-27",
+        "actualizaciones": 3
+      },
+      {
+        "fecha": "2026-07-29",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-07-30",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-08-03",
+        "actualizaciones": 1
+      }
+    ],
+    "records": {
+      "mayor_numero_alcanzado_en_dia": 9,
+      "mes_con_mas_actividad": "2026-07",
+      "anio_con_mas_actividad": 2026,
+      "dia_con_mas_cambios": "2026-07-06"
+    }
+  },
+  {
+    "gerencia_id": "LA_GOMERA",
+    "nombre_gerencia": "La Gomera",
+    "fecha_ultimo_llamamiento": "2026-07-21 15:00:57",
+    "dias_desde_ultimo_llamamiento": -196,
+    "clasificacion_actividad": "Alta",
+    "actualizaciones_ultimos_30_dias": 9,
+    "dias_activos_ultimos_30_dias": 4,
+    "consulta_personalizada": {
+      "ultimos_7_dias": {
+        "total_actualizaciones": 9,
+        "dias_con_actividad": 4,
+        "porcentaje_dias": 57.14,
+        "ultima_fecha": "2026-07-21"
+      },
+      "ultimos_15_dias": {
+        "total_actualizaciones": 9,
+        "dias_con_actividad": 4,
+        "porcentaje_dias": 26.67,
+        "ultima_fecha": "2026-07-21"
+      },
+      "ultimos_30_dias": {
+        "total_actualizaciones": 9,
+        "dias_con_actividad": 4,
+        "porcentaje_dias": 13.33,
+        "ultima_fecha": "2026-07-21"
+      },
+      "ultimos_90_dias": {
+        "total_actualizaciones": 9,
+        "dias_con_actividad": 4,
+        "porcentaje_dias": 4.44,
+        "ultima_fecha": "2026-07-21"
+      },
+      "ultimos_180_dias": {
+        "total_actualizaciones": 9,
+        "dias_con_actividad": 4,
+        "porcentaje_dias": 2.22,
+        "ultima_fecha": "2026-07-21"
+      },
+      "historico_completo": {
+        "total_actualizaciones": 9,
+        "dias_con_actividad": 4,
+        "porcentaje_dias": 13.33,
+        "ultima_fecha": "2026-07-21"
+      }
+    },
+    "heatmap_diario": {
+      "2026-06-22": 1,
+      "2026-07-02": 1,
+      "2026-07-10": 1,
+      "2026-07-21": 6
+    },
+    "histograma": [
+      {
+        "intervalo": "1",
+        "frecuencia": 3
+      },
+      {
+        "intervalo": "6",
+        "frecuencia": 1
+      }
+    ],
+    "evolucion_temporal": [
+      {
+        "fecha": "2026-06-22",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-07-02",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-07-10",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-07-21",
+        "actualizaciones": 6
+      }
+    ],
+    "records": {
+      "mayor_numero_alcanzado_en_dia": 6,
+      "mes_con_mas_actividad": "2026-07",
+      "anio_con_mas_actividad": 2026,
+      "dia_con_mas_cambios": "2026-07-21"
+    }
+  },
+  {
+    "gerencia_id": "ATENCIÓN_PRIMARIA_TENERIFE",
+    "nombre_gerencia": "Atención Primaria Tenerife",
+    "fecha_ultimo_llamamiento": "2026-07-28 15:30:56",
+    "dias_desde_ultimo_llamamiento": -203,
+    "clasificacion_actividad": "Muy activa",
+    "actualizaciones_ultimos_30_dias": 25,
+    "dias_activos_ultimos_30_dias": 8,
+    "consulta_personalizada": {
+      "ultimos_7_dias": {
+        "total_actualizaciones": 25,
+        "dias_con_actividad": 8,
+        "porcentaje_dias": 114.29,
+        "ultima_fecha": "2026-07-28"
+      },
+      "ultimos_15_dias": {
+        "total_actualizaciones": 25,
+        "dias_con_actividad": 8,
+        "porcentaje_dias": 53.33,
+        "ultima_fecha": "2026-07-28"
+      },
+      "ultimos_30_dias": {
+        "total_actualizaciones": 25,
+        "dias_con_actividad": 8,
+        "porcentaje_dias": 26.67,
+        "ultima_fecha": "2026-07-28"
+      },
+      "ultimos_90_dias": {
+        "total_actualizaciones": 25,
+        "dias_con_actividad": 8,
+        "porcentaje_dias": 8.89,
+        "ultima_fecha": "2026-07-28"
+      },
+      "ultimos_180_dias": {
+        "total_actualizaciones": 25,
+        "dias_con_actividad": 8,
+        "porcentaje_dias": 4.44,
+        "ultima_fecha": "2026-07-28"
+      },
+      "historico_completo": {
+        "total_actualizaciones": 25,
+        "dias_con_actividad": 8,
+        "porcentaje_dias": 22.22,
+        "ultima_fecha": "2026-07-28"
+      }
+    },
+    "heatmap_diario": {
+      "2026-06-23": 1,
+      "2026-06-24": 1,
+      "2026-07-02": 5,
+      "2026-07-06": 7,
+      "2026-07-07": 1,
+      "2026-07-08": 5,
+      "2026-07-09": 3,
+      "2026-07-28": 2
+    },
+    "histograma": [
+      {
+        "intervalo": "1",
+        "frecuencia": 3
+      },
+      {
+        "intervalo": "2",
+        "frecuencia": 1
+      },
+      {
+        "intervalo": "3",
+        "frecuencia": 1
+      },
+      {
+        "intervalo": "5",
+        "frecuencia": 2
+      },
+      {
+        "intervalo": "7",
+        "frecuencia": 1
+      }
+    ],
+    "evolucion_temporal": [
+      {
+        "fecha": "2026-06-23",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-06-24",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-07-02",
+        "actualizaciones": 5
+      },
+      {
+        "fecha": "2026-07-06",
+        "actualizaciones": 7
+      },
+      {
+        "fecha": "2026-07-07",
+        "actualizaciones": 1
+      },
+      {
+        "fecha": "2026-07-08",
+        "actualizaciones": 5
+      },
+      {
+        "fecha": "2026-07-09",
+        "actualizaciones": 3
+      },
+      {
+        "fecha": "2026-07-28",
+        "actualizaciones": 2
+      }
+    ],
+    "records": {
+      "mayor_numero_alcanzado_en_dia": 7,
+      "mes_con_mas_actividad": "2026-07",
+      "anio_con_mas_actividad": 2026,
+      "dia_con_mas_cambios": "2026-07-06"
+    }
+  }
+]
