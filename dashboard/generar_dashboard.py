@@ -5,7 +5,6 @@ import pandas as pd
 
 
 def descargar_csv_de_sheets(file_id, ruta_salida="llamamientos.csv"):
-    """Descarga el contenido de un Google Spreadsheet directamente en formato CSV."""
     try:
         url_descarga = (
             f"https://docs.google.com/spreadsheets/d/{file_id}/export?format=csv"
@@ -30,11 +29,8 @@ def generar_dashboard():
         print(f"No se encuentra el archivo {archivo_csv}")
         return
 
-    # Leer el CSV indicando que NO tiene cabecera (header=None) y asignando nombres a las columnas
     df = pd.read_csv(archivo_csv, header=None)
 
-    # Nos aseguramos de quedarnos al menos con las 6 primeras columnas que nos interesan
-    # 0: FechaHora, 1: Gerencia, 2: Lista, 3: TipoNombramiento, 4: NumeroGerencia, 5: Extra
     if df.shape[1] >= 6:
         df = df.iloc[:, :6]
         df.columns = [
@@ -46,7 +42,6 @@ def generar_dashboard():
             "Extra",
         ]
     else:
-        # Por si tuviera exactamente 5 columnas
         df.columns = [
             "FechaHora",
             "Gerencia",
@@ -55,14 +50,16 @@ def generar_dashboard():
             "NumeroGerencia",
         ][: df.shape[1]]
 
-    # Limpieza básica y conversión de fechas
-    df["FechaHora"] = pd.to_datetime(df["FechaHora"], errors="coerce")
+    # Forzar conversión de fecha robusta especificando format o dayfirst si hace falta
+    df["FechaHora"] = pd.to_datetime(
+        df["FechaHora"], format="mixed", errors="coerce"
+    )
     df = df.dropna(subset=["FechaHora"])
     df = df.sort_values("FechaHora", ascending=True)
 
-    # Reemplazar valores nulos o "-" en los números por NaN
     df["NumeroGerencia"] = pd.to_numeric(df["NumeroGerencia"], errors="coerce")
 
+    # Referencia estricta al día y hora actual del servidor
     ahora = datetime.now()
     fecha_actualizacion = ahora.strftime("%Y-%m-%dT%H:%M:%SZ")
 
@@ -79,11 +76,7 @@ def generar_dashboard():
             if pd.notna(row["NumeroGerencia"])
             else None
         )
-        fecha_str = (
-            row["FechaHora"].strftime("%Y-%m-%dT%H:%M:%SZ")
-            if pd.notna(row["FechaHora"])
-            else fecha_actualizacion
-        )
+        fecha_str = row["FechaHora"].strftime("%Y-%m-%dT%H:%M:%SZ")
 
         estado_por_gerencia[gerencia] = {
             "numero_gerencia": num_gerencia,
@@ -109,7 +102,7 @@ def generar_dashboard():
         ranking_list, key=lambda x: x["ultimo_numero"] or 0, reverse=True
     )
 
-    # 3. Análisis temporal por ventanas de días (7, 15, 30, 90, 180)
+    # 3. Análisis temporal por ventanas de días estrictas basadas en 'ahora'
     ventanas = [7, 15, 30, 90, 180]
     metricas_por_ventana = {}
 
@@ -182,7 +175,7 @@ def generar_dashboard():
     with open(archivo_salida, "w", encoding="utf-8") as f:
         json.dump(dashboard_data, f, ensure_ascii=False, indent=2)
 
-    print(f"¡ {archivo_salida} generado con éxito!")
+    print(f"¡ {archivo_salida} generado correctamente con referencia a la fecha actual!")
 
 
 if __name__ == "__main__":
