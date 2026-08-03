@@ -18,7 +18,8 @@ def descargar_csv_de_sheets(file_id, ruta_salida="llamamientos.csv"):
 
 
 def generar_dashboard():
-    sheet_id = "1sHmB41ka-RyK-F04Chf7F40dirLO34Dhx2KmAYaV1W8"
+    # ID correcto actualizado con tu enlace de Google Sheets
+    sheet_id = "1nmfP4nXQ4Oydvic_rZ1K19zCQBinAicHG38MeKUO0MU"
 
     if not descargar_csv_de_sheets(sheet_id, "llamamientos.csv"):
         return
@@ -37,7 +38,7 @@ def generar_dashboard():
     print(df.head())
     print("----------------------------")
 
-    # Conversión directa de fecha y número (sin inventos de dayfirst)
+    # Conversión directa de fecha y número
     df["FechaHora"] = pd.to_datetime(df["FechaHora"], errors="coerce")
     df["NumeroGerencia"] = pd.to_numeric(df["NumeroGerencia"], errors="coerce")
 
